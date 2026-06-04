@@ -40,15 +40,30 @@ function parseCSV(text) {
   )];
 }
 
+async function loadPdfJs() {
+  if (window.pdfjsLib) return window.pdfjsLib;
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = () => reject(new Error("Falha ao carregar biblioteca PDF."));
+    document.head.appendChild(script);
+  });
+}
+
 async function extractPdfText(file) {
-  if (!window.pdfjsLib) throw new Error("Biblioteca PDF nao carregada.");
+  const pdfjsLib = await loadPdfJs();
   const buf = await file.arrayBuffer();
-  const pdf = await window.pdfjsLib.getDocument({data:buf}).promise;
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   let out = "";
-  for (let i=1;i<=Math.min(pdf.numPages,20);i++) {
+  for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
     const page = await pdf.getPage(i);
     const c = await page.getTextContent();
-    out += c.items.map(it=>it.str).join(" ")+"\n";
+    out += c.items.map((it) => it.str).join(" ") + "\n";
   }
   return out.trim();
 }
@@ -447,8 +462,6 @@ export default function App() {
   return (
     <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#0f1626,#0b1120)",fontFamily:"Verdana,Geneva,sans-serif",color:"#f1f5f9"}}>
       <style>{css}</style>
-      {/* pdf.js CDN for PDF extraction */}
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" />
 
       {/* ── HEADER ── */}
       <div style={{borderBottom:"1px solid #232f47",padding:"14px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(15,22,38,.92)",backdropFilter:"blur(16px)",position:"sticky",top:0,zIndex:100}}>
