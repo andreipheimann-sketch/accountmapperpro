@@ -40,7 +40,7 @@ export default async function handler(req, res) {
           include_answer: true,
           include_domains: [],
           language: "pt",
-          country: "BR",
+          country: "Brazil",
         }),
       });
 
