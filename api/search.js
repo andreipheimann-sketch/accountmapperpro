@@ -22,9 +22,9 @@ export default async function handler(req, res) {
     }
 
     const queries = [
-      `${company} empresa noticias recentes`,
-      `${company} faturamento numero de funcionarios sede`,
-      `${company} CEO diretoria executivos lideranca`,
+      `${company} empresa noticias recentes Brasil`,
+      `${company} faturamento numero de funcionarios sede Brasil`,
+      `${company} CEO diretoria executivos lideranca Brasil`,
     ];
 
     const results = [];
@@ -38,6 +38,9 @@ export default async function handler(req, res) {
           search_depth: "basic",
           max_results: 4,
           include_answer: true,
+          include_domains: [],
+          language: "pt",
+          country: "BR",
         }),
       });
 
