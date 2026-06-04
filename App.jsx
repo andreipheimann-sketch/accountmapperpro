@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const scoreColors = {
-  ALTO:  { bg: "rgba(52,211,153,.12)",  border: "#34d399", text: "#34d399", hex: "#34d399" },
-  MEDIO: { bg: "rgba(251,191,36,.12)",  border: "#fbbf24", text: "#fbbf24", hex: "#fbbf24" },
-  BAIXO: { bg: "rgba(248,113,113,.12)", border: "#f87171", text: "#f87171", hex: "#f87171" },
+  ALTO:  { bg: "rgba(52,211,153,.15)",  border: "#34d399", text: "#34d399", hex: "#34d399", glow: "rgba(52,211,153,.3)" },
+  MEDIO: { bg: "rgba(251,191,36,.15)",  border: "#fbbf24", text: "#fbbf24", hex: "#fbbf24", glow: "rgba(251,191,36,.3)" },
+  BAIXO: { bg: "rgba(248,113,113,.15)", border: "#f87171", text: "#f87171", hex: "#f87171", glow: "rgba(248,113,113,.3)" },
 };
 const tierColors  = { "Tier 1": "#34d399", "Tier 2": "#fbbf24", "Tier 3": "#94a3b8" };
 const prioColors  = { PRIMARIO: "#34d399", SECUNDARIO: "#fbbf24", TERCIARIO: "#94a3b8" };
@@ -22,7 +22,6 @@ function prioKey(p) {
 }
 function safeArr(v) { return Array.isArray(v)?v:[]; }
 
-// CSV parser — handles name,site (2-column) or name-only
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   if (!lines.length) return [];
@@ -33,7 +32,6 @@ function parseCSV(text) {
   return [...new Set(
     dataLines.map(l => {
       const cols = l.split(delim).map(c=>c.trim().replace(/^["']|["']$/g,""));
-      // prefer URL/site column if present, else name
       if (cols.length >= 2 && isUrl(cols[1])) return cols[1];
       return cols[0];
     }).filter(Boolean)
@@ -68,23 +66,61 @@ async function extractPdfText(file) {
   return out.trim();
 }
 
-// MEDDPICC scoring heuristic
-function calcMEDDPICC(data) {
-  if (!data) return null;
-  const score = {
-    M: data.dores?.principais?.length > 2 ? 8 : 5,
-    E: data.stakeholders?.some(s=>s.prioridade==="PRIMARIO") ? 7 : 4,
-    D: data.dores?.exposicao_regulatoria?.length > 1 ? 8 : 5,
-    D2: data.triggers?.length > 2 ? 7 : 4,
-    P: scoreKey(data.fit?.score)==="ALTO" ? 8 : 5,
-    I: data.dores?.sinais_ativos?.length > 1 ? 7 : 4,
-    C: data.stakeholders?.filter(s=>s.prioridade!=="TERCIARIO").length > 1 ? 8 : 5,
-    C2: scoreKey(data.fit?.score)==="ALTO" ? 8 : 5,
-  };
-  return score;
+// Extract useful facts from Tavily results — only metadata, not raw text
+function extractFacts(searchResults) {
+  const facts = { hasData: false, urls: [], domains: [], newsCount: 0 };
+  if (!Array.isArray(searchResults) || !searchResults.length) return facts;
+  facts.hasData = true;
+  for (const block of searchResults) {
+    for (const src of (block.sources || [])) {
+      if (src.url) {
+        facts.urls.push(src.url);
+        const d = src.url.replace(/^https?:\/\//,"").split("/")[0];
+        if (d && !facts.domains.includes(d)) facts.domains.push(d);
+        facts.newsCount++;
+      }
+    }
+  }
+  return facts;
 }
 
-// Consolidated batch summary
+// Build real news items from Tavily — keep only PT-BR sources when possible
+function buildRealNews(searchResults) {
+  if (!Array.isArray(searchResults) || !searchResults.length) return null;
+  const items = [];
+  const ptDomains = /\.com\.br|folha|globo|estadao|valor|exame|infomoney|startups|canaltech|tecmundo|convergencia|segs|br\.linkedin|br\./i;
+  const seen = new Set();
+
+  for (const block of searchResults) {
+    for (const src of (block.sources || []).slice(0, 4)) {
+      if (!src.title || !src.content || seen.has(src.url)) continue;
+      seen.add(src.url);
+      // Filter: prefer PT-BR sources, but include others if not enough
+      const isPT = ptDomains.test(src.url || "");
+      items.push({ isPT, titulo: src.title, resumo: src.content.slice(0, 280) + (src.content.length > 280 ? "..." : ""), relevancia: src.url ? `Fonte: ${src.url.replace(/^https?:\/\//,"").split("/")[0]}` : "Dado atualizado via busca online", url: src.url || "" });
+    }
+  }
+
+  // Sort PT-BR sources first
+  items.sort((a, b) => (b.isPT ? 1 : 0) - (a.isPT ? 1 : 0));
+  return items.length ? items.slice(0, 6) : null;
+}
+
+// MEDDPICC scoring
+function calcMEDDPICC(data) {
+  if (!data) return null;
+  return {
+    M: data.dores?.principais?.length > 3 ? 9 : data.dores?.principais?.length > 1 ? 7 : 5,
+    E: data.stakeholders?.some(s=>s.prioridade==="PRIMARIO") ? 7 : 4,
+    D: data.dores?.exposicao_regulatoria?.length > 2 ? 9 : data.dores?.exposicao_regulatoria?.length > 0 ? 7 : 4,
+    D2: data.triggers?.length > 3 ? 8 : data.triggers?.length > 1 ? 6 : 4,
+    P: scoreKey(data.fit?.score)==="ALTO" ? 8 : scoreKey(data.fit?.score)==="MEDIO" ? 6 : 3,
+    I: data.dores?.sinais_ativos?.length > 2 ? 8 : 5,
+    C: data.stakeholders?.filter(s=>s.prioridade!=="TERCIARIO").length > 2 ? 8 : 5,
+    C2: scoreKey(data.fit?.score)==="ALTO" ? 9 : 6,
+  };
+}
+
 function buildConsolidated(results) {
   const valid = results.filter(b=>b.data);
   const byTier = {"Tier 1":[],"Tier 2":[],"Tier 3":[]};
@@ -93,8 +129,7 @@ function buildConsolidated(results) {
   for (const b of valid) {
     const tier = b.data.estrategia?.tier||"Tier 2";
     if (byTier[tier]) byTier[tier].push(b.company);
-    const sk = scoreKey(b.data.fit?.score);
-    byScore[sk]++;
+    byScore[scoreKey(b.data.fit?.score)]++;
     const setor = b.data.empresa?.setor||"Outros";
     setores[setor] = (setores[setor]||0)+1;
   }
@@ -104,165 +139,342 @@ function buildConsolidated(results) {
 // ─── ACCOUNT DATA BUILDER ────────────────────────────────────────────────────
 function buildAccountData(company, searchResults) {
   const lower = company.toLowerCase();
+  const facts = extractFacts(searchResults);
+  const realNews = buildRealNews(searchResults);
 
-  // Process Tavily results
-  let realNews=null, realFaturamento=null, realSummary=null;
-  if (Array.isArray(searchResults) && searchResults.length>0) {
-    realNews=[];
-    for (const block of searchResults) {
-      if (block.answer && !realSummary) realSummary = block.answer;
-      if (/faturamento|funcion|receita|sede/i.test(block.query) && block.answer && !realFaturamento)
-        realFaturamento = block.answer;
-      for (const src of (block.sources||[]).slice(0,3)) {
-        if (src.title && src.content)
-          realNews.push({ titulo:src.title, resumo:src.content.slice(0,240)+(src.content.length>240?"...":""), relevancia:src.url?`Fonte: ${src.url.replace(/^https?:\/\//,"").split("/")[0]}`:"Dado atualizado via busca online", url:src.url||"" });
-      }
-    }
-    if (!realNews.length) realNews=null;
-  }
+  const isBank     = /banc|inter|btg|ita[uú]|bradesco|santander|caixa|nubank|c6|original|safra|sicredi|sicoob|banco/.test(lower);
+  const isPayment  = /stone|cielo|getnet|picpay|ton\b|infinitepay|sumup|pagbank|pagseguro/.test(lower);
+  const isMarket   = /mercado livre|magalu|magazine|americanas|shopee|amazon|olist|via varejo/.test(lower);
+  const isFintech  = /fintech|creditas|neon|warren|nuinvest|open co|rebel|just|monkey/.test(lower);
+  const isInsur    = /seguro|porto\b|sulam|prudential|metlife|hapvida|amil|unimed|bradesco seguros/.test(lower);
+  const isBet      = /bet|aposta|cassino|sportingbet|betano|blaze|estrela bet|br4bet/.test(lower);
+  const isPag      = /pag|mercado pago/.test(lower);
 
-  const isBank     = /banc|inter|btg|ita[uú]|bradesco|santander|caixa|nubank|c6|original|safra|sicredi|sicoob/.test(lower);
-  const isPayment  = /pag|stone|cielo|getnet|picpay|ton |infinitepay|sumup/.test(lower);
-  const isMarket   = /mercado livre|magalu|magazine|americanas|shopee|amazon|olist/.test(lower);
-  const isFintech  = /fintech|cr[eé]dito|empr[eé]st|creditas|neon|warren|nuinvest/.test(lower);
-  const isInsur    = /seguro|seguradora|porto |sulam|prudential|metlife|hapvida|amil|unimed/.test(lower);
-  const isBet      = /bet|aposta|cassino|sportingbet|betano|blaze/.test(lower);
-
-  let setor="Serviços Financeiros", solucoes=["Liveness","FaceMatch","KYC","Smart Auth"], useCases=[], dores=[], exposicao=["BACEN","LGPD"], triggers=[], tier="Tier 2", score="ALTO";
+  let setor, solucoes, useCases, dores, exposicao, triggers, competidores, mercado, tier="Tier 2", score="ALTO";
 
   if (isBank) {
-    setor="Banco / Instituição Financeira"; tier="Tier 1";
-    solucoes=["Liveness Ativo/Passivo","FaceMatch","DocLess","KYC","Background Check","Smart Auth"];
-    useCases=["Onboarding 100% digital de contas","Reautenticação em transações de alto valor","Detecção de deepfake na abertura de conta","Validação biométrica para PIX"];
-    dores=["Alto volume de tentativas de fraude na abertura de contas","Análise manual excessiva no onboarding","Liveness atual com baixa acurácia contra deepfakes","Pressão regulatória do BACEN sobre prevenção a fraude"];
-    exposicao=["BACEN Res. 4.658","LGPD","Circular 3.978 (PLD/FT)","COAF"];
-    triggers=["Crescimento acelerado da base de clientes","Aumento reportado de fraudes de identidade","Expansão para novos produtos digitais","Renovação de contrato com provedor atual"];
-  } else if (isPayment) {
-    setor="Meios de Pagamento"; tier="Tier 1";
-    solucoes=["KYB","Liveness","FaceMatch","Antifraude Transacional","Smart Auth"];
-    useCases=["Onboarding de merchants (KYB)","Validação de identidade em cash-out","Prevenção a fraude transacional","Autenticação contínua em transações"];
-    dores=["Fraude no onboarding de sellers/merchants","Chargebacks por fraude de identidade","Validação manual de documentos de PJ","Escalar onboarding sem aumentar equipe"];
-    exposicao=["BACEN","LGPD","PLD/FT","Arranjos de Pagamento"];
-    triggers=["Expansão da base de merchants","Aumento de fraude transacional","Entrada em novos mercados","Lançamento de conta PJ"];
+    setor = "Banco / Instituição Financeira"; tier = "Tier 1";
+    solucoes = ["Liveness Ativo e Passivo","FaceMatch Biométrico","DocLess (CPF + Selfie)","VerifAI Docs","KYC Completo","Background Check","Smart Auth","Detecção de Deepfake"];
+    useCases = [
+      "Onboarding 100% digital com validação biométrica em segundos",
+      "Reautenticação silenciosa em transações acima do limite",
+      "Detecção de deepfake e injeção de vídeo em tempo real",
+      "Validação biométrica para PIX de alto valor",
+      "KYC regulatório automatizado para abertura de conta PJ",
+      "Prova de vida para operações de crédito e financiamento"
+    ];
+    dores = [
+      "Alto índice de fraude de identidade no onboarding digital (deepfake, documentos sintéticos)",
+      "Análise manual excessiva que trava a escala e aumenta custo operacional",
+      "Liveness atual com falsa rejeição elevada, aumentando o abandono no funil",
+      "Pressão crescente do BACEN sobre controles de prevenção à fraude e PLD/FT",
+      "Dificuldade de equilibrar segurança e experiência do cliente no onboarding",
+      "Exposição a fraude de conta mula e abertura com documentos roubados"
+    ];
+    exposicao = ["BACEN Res. 4.658","LGPD","Circular 3.978 (PLD/FT)","COAF","Resolução CMN 4.893","Bacen Open Finance"];
+    triggers = [
+      "Crescimento acelerado de abertura de contas digitais",
+      "Aumento reportado de tentativas de fraude de identidade",
+      "Pressão regulatória do BACEN sobre controles de onboarding",
+      "Lançamento de novo produto digital (cartão, crédito, investimento)",
+      "Renovação ou insatisfação com provedor atual de liveness",
+      "Expansão para segmento PJ ou novos mercados LATAM"
+    ];
+    competidores = ["Unico IDtech","Idwall","Serpro","Acesso Digital","Truora"];
+    mercado = "O mercado bancário brasileiro processa mais de 2 bilhões de transações digitais por mês. Com a aceleração do Open Finance e o crescimento de bancos digitais, o volume de onboarding digital cresceu 340% nos últimos 3 anos — e as tentativas de fraude de identidade acompanharam esse crescimento, representando perdas estimadas em R$ 8,9 bilhões ao ano no setor financeiro. A regulação do BACEN está cada vez mais rigorosa para controles de KYC e PLD/FT.";
+  } else if (isPayment || isPag) {
+    setor = "Meios de Pagamento"; tier = "Tier 1";
+    solucoes = ["KYB para Merchants","Liveness Biométrico","FaceMatch","Antifraude Transacional","Smart Auth","Background Check PJ"];
+    useCases = [
+      "Onboarding automatizado de merchants com validação KYB",
+      "Validação de identidade em operações de saque e cash-out",
+      "Prevenção a fraude transacional em tempo real",
+      "Autenticação contínua baseada em comportamento",
+      "Verificação de sócios e documentos empresariais (KYB)",
+      "Detecção de contas laranjas e mulas no cadastro"
+    ];
+    dores = [
+      "Fraude no onboarding de sellers e merchants (PJ e PF)",
+      "Chargebacks elevados por fraude de identidade em transações",
+      "Validação manual de documentos de PJ que trava a escala",
+      "Dificuldade de equilibrar conversão de merchants e segurança",
+      "Risco de multa regulatória por falha em controles PLD/FT",
+      "Contas laranjas usadas para lavagem de dinheiro na plataforma"
+    ];
+    exposicao = ["BACEN","LGPD","PLD/FT","Arranjos de Pagamento","Circular 3.681","COAF"];
+    triggers = ["Expansão acelerada da base de merchants","Aumento de chargebacks e fraude transacional","Entrada em novos segmentos ou mercados","Lançamento de conta PJ","Pressão regulatória sobre KYB","Crescimento do marketplace own products"];
+    competidores = ["Unico IDtech","Idwall","ClearSale","Konduto","Acesso Digital"];
+    mercado = "O setor de meios de pagamento brasileiro movimentou R$ 3,2 trilhões em 2023, com o PIX respondendo por 42% das transações. O onboarding de merchants cresceu 180% com a expansão do e-commerce e do POS digital. Fraudes transacionais custam ao setor aproximadamente R$ 2,4 bilhões ao ano.";
   } else if (isMarket) {
-    setor="Marketplace / E-commerce"; tier="Tier 1";
-    solucoes=["KYB","Liveness","DocLess","Background Check","Antifraude"];
-    useCases=["Onboarding de sellers (KYB)","Validação de identidade de compradores","Prevenção a contas falsas","Verificação de vendedores de alto risco"];
-    dores=["Sellers fraudulentos na plataforma","Contas falsas para golpes","Validação manual de cadastros de vendedores","Equilíbrio entre segurança e fricção no cadastro"];
-    exposicao=["LGPD","Marco Civil","Código de Defesa do Consumidor"];
-    triggers=["Crescimento do número de sellers","Casos públicos de golpes na plataforma","Expansão de categorias","Pressão por redução de fraude"];
+    setor = "Marketplace / E-commerce"; tier = "Tier 1";
+    solucoes = ["KYB para Sellers","Liveness","DocLess","Background Check","Antifraude de Identidade","VerifAI Docs"];
+    useCases = [
+      "Onboarding seguro de sellers com validação KYB automatizada",
+      "Verificação de identidade de compradores em operações de alto valor",
+      "Detecção de contas falsas e perfis duplicados",
+      "Validação de documentos empresariais de sellers PJ",
+      "Prevenção a golpes do tipo falso vendedor",
+      "Background check de sellers em categorias de risco"
+    ];
+    dores = [
+      "Sellers fraudulentos que aplicam golpes nos compradores",
+      "Contas falsas usadas para fraudes e reviews manipulados",
+      "Validação manual de cadastros de vendedores que não escala",
+      "Dificuldade de equilibrar fricção no cadastro e segurança",
+      "Pressão de regulação para combate a fraude e lavagem de dinheiro",
+      "Reputação da plataforma afetada por golpes públicos"
+    ];
+    exposicao = ["LGPD","Marco Civil da Internet","CDC","COAF (para marketplaces financeiros)"];
+    triggers = ["Crescimento acelerado de sellers","Caso público de golpe na plataforma","Expansão de categorias de alto risco","Pressão de parceiros e anunciantes","Novo produto financeiro para sellers"];
+    competidores = ["Unico IDtech","Idwall","Acesso Digital","Truora"];
+    mercado = "O e-commerce brasileiro faturou R$ 186 bilhões em 2023, com crescimento de 12% a.a. O número de sellers ativos nos principais marketplaces ultrapassa 3 milhões. Golpes envolvendo falsos vendedores geraram mais de 2 milhões de reclamações no Procon em 2023.";
   } else if (isFintech) {
-    setor="Fintech"; tier="Tier 1";
-    solucoes=["Liveness","FaceMatch","DocLess","KYC","Smart Auth"];
-    useCases=["Onboarding digital sem fricção","Validação de identidade para crédito","Prevenção a fraude em empréstimos","Reautenticação em operações sensíveis"];
-    dores=["Fraude de identidade em pedidos de crédito","Onboarding com alta taxa de abandono","Análise manual que trava a escala","Falsa identidade em inadimplência intencional"];
-    exposicao=["BACEN","LGPD","Res. 4.656 (SCD/SEP)","PLD/FT"];
-    triggers=["Rodada de investimento recente","Crescimento acelerado de usuários","Lançamento de produto de crédito","Pressão de investidores por eficiência"];
+    setor = "Fintech de Crédito / Serviços Financeiros"; tier = "Tier 1";
+    solucoes = ["Liveness Biométrico","FaceMatch","DocLess","KYC Completo","Smart Auth","Background Check"];
+    useCases = [
+      "Onboarding digital sem fricção para concessão de crédito",
+      "Validação de identidade em solicitações de empréstimo",
+      "Prevenção a fraude de identidade em inadimplência intencional",
+      "Reautenticação em operações financeiras sensíveis",
+      "Verificação de elegibilidade com background check automatizado",
+      "Prova de vida para portabilidade de crédito e renegociação"
+    ];
+    dores = [
+      "Fraude de identidade em pedidos de crédito (uso de dados roubados)",
+      "Inadimplência intencional com falsa identidade",
+      "Onboarding com alta taxa de abandono por fricção excessiva",
+      "Análise manual que impede a escala sem aumento de custo",
+      "Pressão regulatória do BACEN para controles KYC rigorosos",
+      "Dificuldade de detectar fraude sintética de identidade"
+    ];
+    exposicao = ["BACEN","LGPD","Res. 4.656 (SCD/SEP)","PLD/FT","COAF","Resolução CMN 4.557"];
+    triggers = ["Rodada de investimento e necessidade de escala","Crescimento acelerado de usuários e pedidos","Lançamento de produto de crédito ou conta","Pressão de investidores por eficiência operacional","Aumento na taxa de inadimplência por fraude","Auditoria regulatória do BACEN"];
+    competidores = ["Unico IDtech","Idwall","Acesso Digital","Truora","Zerobounce"];
+    mercado = "O mercado de crédito digital no Brasil atingiu R$ 320 bilhões em carteira ativa em 2023. Fintechs de crédito cresceram 28% a.a., mas a fraude de identidade representa 34% das perdas por inadimplência, segundo a Serasa Experian.";
   } else if (isInsur) {
-    setor="Seguradora"; tier="Tier 2";
-    solucoes=["Liveness","FaceMatch","DocLess","Background Check"];
-    useCases=["Onboarding de segurados","Validação de identidade em sinistros","Prevenção a fraude em indenizações","Verificação em contratação digital"];
-    dores=["Fraude em sinistros por falsa identidade","Onboarding digital com fricção alta","Validação manual de documentos","Compliance SUSEP"];
-    exposicao=["SUSEP","LGPD","PLD/FT"];
-    triggers=["Digitalização da jornada de contratação","Aumento de fraude em sinistros","Lançamento de seguro 100% digital"];
+    setor = "Seguradora / Healthtech"; tier = "Tier 2";
+    solucoes = ["Liveness Biométrico","FaceMatch","DocLess","Background Check","VerifAI Docs"];
+    useCases = [
+      "Onboarding digital de segurados com validação biométrica",
+      "Validação de identidade em solicitação de sinistros",
+      "Prevenção a fraude em indenizações por falsa identidade",
+      "Verificação de beneficiários em apólices de vida",
+      "Autenticação forte para alterações contratuais sensíveis",
+      "KYC de corretores e parceiros comerciais"
+    ];
+    dores = [
+      "Fraude em sinistros por falsa identidade ou terceiros",
+      "Onboarding digital com fricção alta gerando abandono",
+      "Validação manual de documentos que aumenta o CAC",
+      "Compliance com exigências da SUSEP sobre processos digitais",
+      "Risco reputacional por casos de fraude em sinistros"
+    ];
+    exposicao = ["SUSEP","LGPD","ANS (saúde)","COAF","PLD/FT"];
+    triggers = ["Digitalização da jornada de contratação","Aumento de fraude em sinistros","Lançamento de produto 100% digital","Pressão da SUSEP por controles KYC","Expansão de canais digitais de distribuição"];
+    competidores = ["Unico IDtech","Idwall","Acesso Digital"];
+    mercado = "O mercado segurador brasileiro movimentou R$ 378 bilhões em prêmios em 2023. A digitalização das seguradoras acelerou com o Open Insurance, mas fraudes em sinistros cresceram 23% no período, custando ao setor R$ 4,1 bilhões ao ano.";
   } else if (isBet) {
-    setor="Apostas Esportivas / iGaming"; tier="Tier 1";
-    solucoes=["Bet ID","Liveness","FaceMatch","KYC","Verificação de Idade"];
-    useCases=["Verificação de idade (18+)","Onboarding KYC para apostadores","Prevenção a contas múltiplas","Compliance com regulação de apostas"];
-    dores=["Compliance com Lei 14.790/2023","Verificação de idade obrigatória","Contas múltiplas e fraude","Onboarding rápido sem comprometer KYC"];
-    exposicao=["Lei 14.790/2023","LGPD","Portaria MF","PLD/FT"];
-    triggers=["Regulamentação federal das apostas","Necessidade de licença","Crescimento explosivo do setor","Exigência de KYC obrigatório"];
+    setor = "Apostas Esportivas / iGaming"; tier = "Tier 1";
+    solucoes = ["Bet ID","Liveness Biométrico","FaceMatch","Verificação de Idade","KYC Regulatório","Background Check"];
+    useCases = [
+      "Verificação obrigatória de maioridade (18+) no cadastro",
+      "Onboarding KYC completo para apostadores conforme Lei 14.790",
+      "Prevenção a contas múltiplas e manipulação de bônus",
+      "Autoproteção e autoexclusão de jogadores problemáticos",
+      "Validação de identidade em saques acima de R$ 2.000",
+      "Background check para detecção de PEPs e listas restritivas"
+    ];
+    dores = [
+      "Compliance obrigatório com Lei 14.790/2023 e regulação do MF",
+      "Verificação de maioridade e identidade no cadastro",
+      "Contas múltiplas para manipulação de odds e bônus",
+      "Risco de perda de licença por falha em controles KYC",
+      "Saques fraudulentos com identidades roubadas",
+      "Pressão crescente de órgãos reguladores sobre PLD/FT"
+    ];
+    exposicao = ["Lei 14.790/2023","LGPD","Portaria SPA/MF","PLD/FT","COAF","SPA (Secretaria de Prêmios e Apostas)"];
+    triggers = ["Regulamentação federal das apostas esportivas","Necessidade de licença operacional","Crescimento explosivo do setor (50M+ apostadores)","Exigência de KYC obrigatório pela regulação","Entrada de novos players internacionais","Pressão regulatória sobre responsabilidade do jogo"];
+    competidores = ["Unico IDtech","Idwall","Acesso Digital","Veriff","Sumsub"];
+    mercado = "O mercado de apostas esportivas legalizadas no Brasil deve movimentar R$ 40 bilhões em 2024, com mais de 50 milhões de apostadores ativos. A regulação exige KYC obrigatório e verificação de identidade — criando uma demanda imediata por soluções de identidade digital em todas as operadoras licenciadas.";
   } else {
-    setor="Empresa com operação digital";
-    useCases=["Onboarding digital seguro","Prevenção a fraude de identidade","Validação documental automatizada","Autenticação de usuários"];
-    dores=["Processo manual de validação de identidade","Exposição a fraude no cadastro digital","Dificuldade de escalar verificação","Compliance com LGPD"];
-    triggers=["Transformação digital","Crescimento da operação online","Necessidade de reduzir fraude"];
+    setor = "Empresa com Operação Digital"; tier = "Tier 2";
+    solucoes = ["Liveness Biométrico","KYC","FaceMatch","DocLess","Smart Auth","Background Check"];
+    useCases = ["Onboarding digital seguro com validação biométrica","Prevenção a fraude de identidade no cadastro","Validação documental automatizada com IA","Autenticação forte em operações sensíveis","Background check de usuários e parceiros"];
+    dores = ["Processo manual de validação de identidade que não escala","Exposição crescente a fraude no cadastro digital","Dificuldade de equilibrar segurança e experiência do usuário","Compliance com LGPD e regulações setoriais","Custo operacional elevado com análise manual"];
+    exposicao = ["LGPD","Marco Civil da Internet"];
+    triggers = ["Transformação digital e migração para canais online","Crescimento acelerado da base de usuários","Aumento de tentativas de fraude no cadastro","Lançamento de produto ou serviço digital","Pressão regulatória sobre proteção de dados"];
+    competidores = ["Unico IDtech","Idwall","Acesso Digital","Serpro"];
+    mercado = "A digitalização acelerada no Brasil gerou mais de 150 milhões de usuários de serviços digitais. Com o aumento de 67% nos crimes cibernéticos em 2023, empresas com operação online enfrentam pressão crescente por controles robustos de identidade digital e prevenção a fraude.";
   }
 
+  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um dos verticais de maior aderência ao ICP da Certta no Brasil. O modelo de negócio exige operação digital de alto volume com exposição direta a fraudes de identidade — exatamente o perfil onde a Certta entrega maior retorno. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa, confirmando atividade digital relevante e presença no mercado.` : ""} Empresas desse segmento que adotam a plataforma Certta reduzem fraudes de identidade em até 80% e eliminam a análise manual no onboarding, com ROI comprovado no primeiro trimestre.`;
+
+  const empresaResumo = `${company} é uma empresa brasileira do setor de ${setor.toLowerCase()}. ${mercado}`;
+
   return {
-    empresa:{ nome:company, setor, tamanho:tier==="Tier 1"?"Enterprise (1000+ funcionários)":"Mid-Market / Enterprise", sede:"Brasil", operacao:"Nacional / LATAM", faturamento:realFaturamento||"A confirmar via RI ou pesquisa", estagio:tier==="Tier 1"?"Consolidada / Scale-up":"Em crescimento", bolsa:isBank||isFintech?"Verificar listagem B3/Nasdaq":"A confirmar" },
-    fit:{ score, justificativa:(realSummary?realSummary+" ":"")+`${company} atua no setor de ${setor.toLowerCase()}, um dos verticais de maior aderência ao ICP da Certta. Alto volume de onboarding digital e exposição direta a fraudes — exatamente onde a Certta entrega maior valor.`, solucoes_certta:solucoes, use_cases:useCases },
-    dores:{ principais:dores, exposicao_regulatoria:exposicao, sinais_ativos:["Vagas abertas de Prevenção à Fraude (LinkedIn)","Notícias sobre fraude no setor","Volume de tráfego digital (SimilarWeb)"] },
+    empresa: {
+      nome: company,
+      setor,
+      resumo: empresaResumo,
+      tamanho: tier==="Tier 1" ? "Enterprise (1.000+ funcionários)" : "Mid-Market / Enterprise",
+      sede: "Brasil",
+      operacao: "Nacional / LATAM",
+      faturamento: "Consultar RI ou relatório público",
+      estagio: tier==="Tier 1" ? "Consolidada / Scale-up" : "Em crescimento",
+      bolsa: isBank||isFintech ? "Verificar listagem B3 / Nasdaq" : "A confirmar"
+    },
+    fit: { score, justificativa: fitJustificativa, solucoes_certta: solucoes, use_cases: useCases },
+    mercado: { contexto: mercado, competidores_provedor: competidores },
+    dores: {
+      principais: dores,
+      exposicao_regulatoria: exposicao,
+      sinais_ativos: [
+        "Monitorar vagas abertas de Prevenção à Fraude no LinkedIn (sinal de dor ativa)",
+        "Verificar reclamações e score no Reclame Aqui sobre segurança e cadastro",
+        "Checar volume e canais de tráfego digital via SimilarWeb",
+        "Acompanhar publicações do BACEN / SUSEP sobre a empresa",
+        `Buscar menções em notícias: '${company} fraude' ou '${company} segurança digital'`
+      ]
+    },
     triggers,
-    stakeholders:[
-      {cargo:"Gerente / Diretor de Prevenção à Fraude",nome:"",angulo:"Dor mais aguda — redução de fraudes, falsos positivos e acurácia do liveness. Ponto de entrada principal.",prioridade:"PRIMARIO"},
-      {cargo:"CPO / Head de Produto",nome:"",angulo:"Foco em conversão e UX do onboarding. Aliado para redução de abandono.",prioridade:"SECUNDARIO"},
-      {cargo:"CTO / Diretor de Tecnologia",nome:"",angulo:"Decisão técnica de integração via API e stack.",prioridade:"SECUNDARIO"},
-      {cargo:"CISO / Head de Segurança",nome:"",angulo:"Entra quando o deal escala. Foco em segurança e compliance.",prioridade:"TERCIARIO"},
-      {cargo:"Head de Compliance",nome:"",angulo:"Validação regulatória (KYC/KYB/PLD). Importante em setores regulados.",prioridade:"TERCIARIO"}
+    stakeholders: [
+      { cargo: "Gerente / Diretor de Prevenção à Fraude", nome: "", linkedin: "", angulo: "Ponto de entrada principal. Sente a dor diariamente — altas taxas de fraude, análise manual, falsos positivos. Quer reduzir perdas e mostrar resultado para o board. Abordagem: dado de impacto financeiro + benchmark do setor.", prioridade: "PRIMARIO", urgencia: "Alta" },
+      { cargo: "CPO / Head de Produto", nome: "", linkedin: "", angulo: "Aliado estratégico. Foco em conversão e experiência do usuário no onboarding. Quer reduzir abandono no funil sem comprometer segurança. Abordagem: demo visual do fluxo + dados de conversão de clientes similares.", prioridade: "SECUNDARIO", urgencia: "Alta" },
+      { cargo: "CTO / Diretor de Tecnologia", nome: "", linkedin: "", angulo: "Decisão técnica. Avalia esforço de integração, disponibilidade de API e SLA. Quer menor fricção para o time de engenharia. Abordagem: documentação técnica + tempo de integração de outros clientes enterprise.", prioridade: "SECUNDARIO", urgencia: "Média" },
+      { cargo: "CISO / Head de Segurança da Informação", nome: "", linkedin: "", angulo: "Entra quando o deal escala. Avalia segurança da plataforma, compliance e certificações. Abordagem: ISO 27001, SOC 2, privacidade de dados biométricos e LGPD.", prioridade: "TERCIARIO", urgencia: "Média" },
+      { cargo: "Head de Compliance / Jurídico", nome: "", linkedin: "", angulo: "Validação regulatória. Avalia aderência ao framework KYC/KYB/PLD e exigências do regulador setorial. Importante em deals com bancos e fintechs. Abordagem: mapeamento regulatório + casos de compliance em produção.", prioridade: "TERCIARIO", urgencia: "Baixa" },
+      { cargo: "CFO / Diretor Financeiro", nome: "", linkedin: "", angulo: "Economic buyer. Aprova o orçamento. Quer ver ROI claro e redução de custo operacional. Abordagem: business case com cálculo de perdas por fraude vs. custo da Certta.", prioridade: "TERCIARIO", urgencia: "Baixa" }
     ],
-    noticias: realNews||[
-      {titulo:`Mapear notícias recentes de ${company}`,resumo:"Pesquisar movimentos estratégicos, expansão, rodadas e declarações de liderança sobre tecnologia e segurança.",relevancia:"Identificar trigger moments",url:""},
-      {titulo:"Contexto do setor",resumo:`O setor de ${setor.toLowerCase()} enfrenta aumento expressivo de fraudes de identidade, com deepfakes e documentos sintéticos sofisticados.`,relevancia:"Argumento de urgência",url:""}
+    noticias: realNews || [
+      { titulo: `${company} — Monitorar notícias recentes no Google News`, resumo: `Pesquisar por '${company} fraude', '${company} segurança digital', '${company} expansão' e '${company} onboarding' para identificar gatilhos e personalizações para a abordagem.`, relevancia: "Trigger identification", url: "" },
+      { titulo: "Contexto do setor — Fraude digital no Brasil em 2024", resumo: `${mercado}`, relevancia: "Argumento de urgência e contexto de mercado", url: "" }
     ],
-    estrategia:{
-      canal_entrada:"LinkedIn direto com Gerente de Prevenção à Fraude + cold call de apoio do BDR",
-      mensagem_linkedin:`Oi, tudo bem? Vi que a ${company} tem operação digital relevante no setor de ${setor.toLowerCase()}. Tenho conversado com empresas similares que reduziram fraudes de identidade em até 80% e eliminaram análise manual no onboarding com liveness de última geração. Faz sentido um papo de 20 minutos?`,
-      mensagem_email_assunto:`Redução de fraude no onboarding — ${company}`,
-      mensagem_email_corpo:`Olá,\n\nVi que a ${company} tem operação digital relevante e imagino que prevenção a fraude no onboarding seja prioridade.\n\nA Certta tem ajudado empresas do setor a:\n• Reduzir fraudes de identidade em até 80%\n• Eliminar a análise manual no onboarding\n• Aumentar a conversão reduzindo a fricção\n• Garantir compliance com ${exposicao[0]} e LGPD\n\nConsigo te mostrar em 20 minutos como isso se aplicaria a vocês. Tem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta`,
-      perguntas_spin:[
-        "Como está estruturado hoje o processo de validação de identidade no onboarding de vocês?",
-        "Qual o volume mensal de novos cadastros e a taxa estimada de tentativas de fraude?",
-        "Quantas pessoas atuam na análise manual de identidade hoje?",
-        "Qual o impacto financeiro das fraudes que passam despercebidas atualmente?",
-        "Vocês já enfrentaram tentativas de fraude com deepfake ou documentos sintéticos?"
+    estrategia: {
+      canal_entrada: "LinkedIn direto com o Gerente de Prevenção à Fraude + cold call de apoio do BDR",
+      mensagem_linkedin: `Olá, tudo bem?\n\nVi que a ${company} tem uma operação digital expressiva no setor de ${setor.toLowerCase()} — exatamente o perfil de empresa com quem tenho trabalhado.\n\nEmpresa similar à de vocês reduziu fraudes de identidade em 73% e eliminou a análise manual no onboarding em 3 semanas após integrar a Certta. O que mais surpreendeu foi o impacto na conversão: +18% de cadastros concluídos.\n\nFaz sentido um papo de 20 minutos para eu entender como está o processo de vocês hoje?\n\nAbraço,\nAndrei Heimann | Account Executive Enterprise · Certta`,
+      mensagem_email_assunto: `${company} + Certta — Redução de fraude no onboarding`,
+      mensagem_email_corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa com quem a Certta gera maior impacto — operação digital de alto volume no setor de ${setor.toLowerCase()}, com exposição real a fraudes de identidade.\n\nNos últimos 12 meses, ajudamos empresas similares a:\n\n• Reduzir fraudes de identidade em até 80%\n• Eliminar completamente a análise manual no onboarding\n• Aumentar a conversão no cadastro em 15-20%\n• Garantir compliance com ${safeArr(exposicao).slice(0,2).join(" e ")} sem fricção operacional\n\nO processo de integração da Certta leva em média 3 semanas e é conduzido pelo nosso time de CS — sem demandar esforço relevante da engenharia de vocês.\n\nConsigo te mostrar em 20 minutos como isso funcionaria na operação de vocês, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta\n(51) 99436-7667`,
+      perguntas_spin: [
+        "SITUAÇÃO: Como está estruturado hoje o processo de validação de identidade no onboarding de vocês — é manual, automatizado ou híbrido?",
+        "SITUAÇÃO: Qual o volume mensal de novos cadastros e qual a taxa estimada de tentativas de fraude que vocês identificam?",
+        "PROBLEMA: Quando uma análise automática não é conclusiva, o que acontece? Vai para uma fila manual? Quantas pessoas lidam com isso?",
+        "PROBLEMA: Vocês já identificaram tentativas de fraude com deepfake, documentos sintéticos ou foto de foto no liveness atual?",
+        "IMPLICAÇÃO: Qual o impacto financeiro estimado das fraudes que passam despercebidas por mês — em perdas diretas e custo operacional?",
+        "IMPLICAÇÃO: O que acontece com a experiência do usuário legítimo quando o liveness rejeita erroneamente? Qual a taxa de falsa rejeição atual?",
+        "NECESSIDADE: Se vocês pudessem automatizar 90% das análises manuais e reduzir fraudes em 70%, qual seria o impacto para o negócio nos próximos 12 meses?"
       ],
-      objecoes:[
-        {objecao:"Já temos um provedor de liveness",resposta:"Entendo. Quando vence o contrato atual? Posso estruturar uma POC comparativa com dados reais antes de qualquer decisão."},
-        {objecao:"Não temos budget no momento",resposta:"Qual é o custo mensal das fraudes não detectadas + equipe de análise manual? Normalmente o ROI da Certta aparece no primeiro trimestre."},
-        {objecao:"Nossa TI não tem capacidade de integração agora",resposta:"A integração da Certta é via API leve — nosso CS conduz todo o processo. Clientes enterprise foram ao ar em semanas."}
+      objecoes: [
+        { objecao: "Já temos um provedor de liveness contratado", resposta: "Faz sentido. Quando vence o contrato atual? O que mais me interessa é entender se o provedor atual está dando conta do volume e da sofisticação das fraudes hoje — especialmente deepfake. Posso estruturar uma POC comparativa com dados reais de vocês, sem custo, para vocês terem um benchmark concreto antes da próxima renovação." },
+        { objecao: "Não temos budget aprovado para isso agora", resposta: "Entendo perfeitamente. Antes de fecharmos esse assunto, me ajuda a entender: qual é o custo estimado das fraudes não detectadas por mês, somado ao custo da equipe de análise manual? Na maioria dos cases que fechamos, o ROI da Certta cobre o investimento já no primeiro trimestre — o que torna a conversa com o CFO mais simples." },
+        { objecao: "Nossa TI não tem capacidade de integração agora", resposta: "Esse é um ponto que aparece bastante. A integração da Certta via API leva em média 3 semanas e é conduzida inteiramente pelo nosso time de CS — o esforço do time de vocês é mínimo. Clients como [referência do setor] foram ao ar sem impactar o roadmap de produto. Podemos começar com um piloto em ambiente de staging para vocês validarem isso sem comprometer nada." },
+        { objecao: "Precisamos avaliar outras soluções antes", resposta: "Faz todo sentido. Quais são os critérios principais que vocês estão avaliando? Pergunto porque dependendo do que for prioritário — acurácia contra deepfake, velocidade de integração, compliance regulatório, ou custo por transação — posso já trazer um comparativo direto no próximo papo." },
+        { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Entendo. Só quero garantir que vocês tenham a informação quando precisar. Me conta: o volume de fraudes está estável ou vocês estão vendo crescimento? Se estiver crescendo, normalmente esse tema sobe de prioridade mais rápido do que os gestores antecipam — e vale a pena já ter avaliado uma solução antes da urgência chegar." }
       ],
       tier
     },
-    proximos_passos:{
-      ae:["Mapear o organograma de decisores no LinkedIn Sales Navigator","Pesquisar vagas abertas de Prevenção à Fraude (sinal de dor ativa)","Montar Raio-x completo com notícias antes da 1ª reunião","Enviar mensagem personalizada ao Gerente de Fraude"],
-      bdr:["Iniciar sequência cold call + WhatsApp","Disparar sequência de 4 e-mails no Outreach/HubSpot","Acompanhar engajamento e sinais via 6Sense"],
-      prazo:"Primeira abordagem em até 48 horas"
+    proximos_passos: {
+      ae: [
+        "Mapear o organograma completo no LinkedIn Sales Navigator — foco em Prevenção à Fraude, Produto e Tecnologia",
+        "Pesquisar vagas abertas de 'Analista de Fraude' ou 'Engenheiro de Identidade' (sinal de dor ativa)",
+        `Buscar no Google News: '${company} fraude', '${company} segurança', '${company} expansão'`,
+        "Preparar business case com estimativa de ROI baseado no porte da empresa",
+        "Enviar mensagem personalizada no LinkedIn ao Gerente de Prevenção à Fraude",
+        "Agendar call de discovery — meta: entender o stack atual e o volume de fraude mensal"
+      ],
+      bdr: [
+        "Iniciar sequência de cold call — foco no Gerente de Fraude e no Head de Produto",
+        "Enviar WhatsApp com vídeo personalizado (Loom) referenciando o setor",
+        "Disparar sequência de 4 e-mails no Outreach/HubSpot (Apresentação → Case → Insight → FUP Final)",
+        "Acompanhar intenção de compra via 6Sense — alertar AE sobre contas quentes",
+        "Mapear eventos do setor onde a empresa estará presente (CIAB, Identity Day)"
+      ],
+      prazo: "Primeira abordagem em até 48 horas — prioridade máxima se Tier 1"
     }
   };
 }
 
-// ─── GAUGE COMPONENT ─────────────────────────────────────────────────────────
+// ─── VISUAL COMPONENTS ────────────────────────────────────────────────────────
 function ScoreGauge({score}) {
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => { setTimeout(()=>setAnimated(true), 100); }, []);
   const sk = scoreKey(score);
   const ss = scoreColors[sk];
   const pct = sk==="ALTO"?0.88:sk==="MEDIO"?0.55:0.22;
-  const r=38, cx=50, cy=52;
-  const circumference = Math.PI*r; // half circle
-  const offset = circumference*(1-pct);
+  const r=36, cx=50, cy=50;
+  const circumference = Math.PI*r;
+  const offset = circumference*(1-(animated?pct:0));
   return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-      <svg width="100" height="60" viewBox="0 0 100 60">
-        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke="#232f47" strokeWidth="10" strokeLinecap="round"/>
-        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke={ss.hex} strokeWidth="10" strokeLinecap="round"
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+      <svg width="100" height="58" viewBox="0 0 100 58">
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={ss.hex} stopOpacity="0.6"/>
+            <stop offset="100%" stopColor={ss.hex}/>
+          </linearGradient>
+        </defs>
+        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke="#1a2438" strokeWidth="10" strokeLinecap="round"/>
+        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke="url(#gaugeGrad)" strokeWidth="10" strokeLinecap="round"
           strokeDasharray={`${circumference} ${circumference}`} strokeDashoffset={offset}
-          style={{transition:"stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)",filter:`drop-shadow(0 0 6px ${ss.hex}66)`}}/>
-        <text x={cx} y={cy-2} textAnchor="middle" fill={ss.hex} fontSize="15" fontWeight="800" fontFamily="Verdana">{score}</text>
+          style={{transition:"stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1)",filter:`drop-shadow(0 0 8px ${ss.glow})`}}/>
+        <text x={cx} y={cy-4} textAnchor="middle" fill={ss.hex} fontSize="14" fontWeight="800" fontFamily="Verdana">{score}</text>
       </svg>
-      <div style={{fontSize:9,color:"#7d8ca8",letterSpacing:1,textTransform:"uppercase"}}>Fit Score</div>
+      <div style={{fontSize:8,color:"#64748b",letterSpacing:1.5,textTransform:"uppercase",fontWeight:700}}>Fit Score</div>
     </div>
   );
 }
 
-// MEDDPICC Visual
 function MEDDPICCCard({data}) {
   const m = calcMEDDPICC(data);
   if (!m) return null;
   const labels = {M:"Metrics",E:"Econ. Buyer",D:"Dec. Criteria",D2:"Dec. Process",P:"Paperwork",I:"Pain Impl.",C:"Champion",C2:"Competition"};
   const avg = Math.round(Object.values(m).reduce((a,b)=>a+b,0)/Object.values(m).length);
+  const [animated, setAnimated] = useState(false);
+  useEffect(()=>{setTimeout(()=>setAnimated(true),200);},[]);
   return (
     <div className="card">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-        <div className="ct">MEDDPICC Score</div>
-        <div style={{fontSize:22,fontWeight:800,color:"#34d399"}}>{avg}<span style={{fontSize:11,color:"#a3b1c9"}}>/10</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+        <div>
+          <div className="ct" style={{marginBottom:4}}>Qualificação MEDDPICC</div>
+          <div style={{fontSize:11.5,color:"#a3b1c9"}}>Score de maturidade do deal baseado nos dados mapeados</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:28,fontWeight:800,color:avg>=7?"#34d399":avg>=5?"#fbbf24":"#f87171",lineHeight:1}}>{avg}</div>
+          <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>/ 10</div>
+        </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-        {Object.entries(m).map(([k,v])=>(
-          <div key={k} style={{background:"#141c2e",borderRadius:10,padding:"10px 8px",textAlign:"center",border:`1px solid ${v>=7?"rgba(52,211,153,.3)":v>=5?"rgba(251,191,36,.25)":"rgba(248,113,113,.25)"}`}}>
-            <div style={{fontSize:16,fontWeight:800,color:v>=7?"#34d399":v>=5?"#fbbf24":"#f87171"}}>{v}</div>
-            <div style={{fontSize:8,color:"#7d8ca8",marginTop:3,textTransform:"uppercase",letterSpacing:.5}}>{labels[k]}</div>
-            <div style={{marginTop:6,height:3,background:"#232f47",borderRadius:3,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${v*10}%`,background:v>=7?"#34d399":v>=5?"#fbbf24":"#f87171",borderRadius:3}}/>
+        {Object.entries(m).map(([k,v])=>{
+          const c = v>=7?"#34d399":v>=5?"#fbbf24":"#f87171";
+          const bg = v>=7?"rgba(52,211,153,.08)":v>=5?"rgba(251,191,36,.08)":"rgba(248,113,113,.08)";
+          const border = v>=7?"rgba(52,211,153,.25)":v>=5?"rgba(251,191,36,.2)":"rgba(248,113,113,.2)";
+          return (
+            <div key={k} style={{background:bg,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1px solid ${border}`,transition:"transform .2s"}}>
+              <div style={{fontSize:18,fontWeight:800,color:c,lineHeight:1,marginBottom:4}}>{v}</div>
+              <div style={{fontSize:8,color:"#7d8ca8",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{labels[k]}</div>
+              <div style={{height:3,background:"#232f47",borderRadius:3,overflow:"hidden"}}>
+                <div style={{height:"100%",width:animated?`${v*10}%`:"0%",background:c,borderRadius:3,transition:"width 1s cubic-bezier(.22,1,.36,1) "+Object.keys(m).indexOf(k)*0.05+"s"}}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TriggerTimeline({triggers}) {
+  if (!safeArr(triggers).length) return null;
+  return (
+    <div className="card">
+      <div className="ct">Timeline de Gatilhos Comerciais</div>
+      <div style={{position:"relative",paddingLeft:24}}>
+        <div style={{position:"absolute",left:8,top:8,bottom:8,width:2,background:"linear-gradient(180deg,#34d399 0%,rgba(52,211,153,.1) 100%)",borderRadius:2}}/>
+        {safeArr(triggers).map((t,i)=>(
+          <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10,position:"relative",animation:`fadeSlide .4s ease ${i*0.08}s both`}}>
+            <div style={{position:"absolute",left:-20,top:8,width:12,height:12,borderRadius:"50%",background:i===0?"#34d399":"#1e293b",border:`2px solid ${i===0?"#34d399":i===1?"#fbbf24":"#2d3a52"}`,boxShadow:i===0?"0 0 12px rgba(52,211,153,.5)":"none",flexShrink:0}}/>
+            <div style={{background:i===0?"rgba(52,211,153,.08)":"#141c2e",border:`1px solid ${i===0?"rgba(52,211,153,.3)":"#2a3650"}`,borderRadius:10,padding:"9px 13px",fontSize:12.5,color:"#e2e8f0",lineHeight:1.5,flex:1}}>
+              {t}
+              {i===0&&<span style={{marginLeft:8,fontSize:8,color:"#34d399",fontWeight:700,letterSpacing:1,textTransform:"uppercase",background:"rgba(52,211,153,.12)",padding:"2px 7px",borderRadius:20}}>ATIVO</span>}
             </div>
           </div>
         ))}
@@ -271,24 +483,17 @@ function MEDDPICCCard({data}) {
   );
 }
 
-// Trigger Timeline
-function TriggerTimeline({triggers}) {
-  if (!safeArr(triggers).length) return null;
+function CompetitorCard({competidores}) {
+  if (!safeArr(competidores).length) return null;
   return (
-    <div className="card">
-      <div className="ct">Timeline de Triggers</div>
-      <div style={{position:"relative",paddingLeft:20}}>
-        <div style={{position:"absolute",left:6,top:0,bottom:0,width:2,background:"linear-gradient(180deg,#34d399,#1e293b)",borderRadius:2}}/>
-        {safeArr(triggers).map((t,i)=>(
-          <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:12,position:"relative"}}>
-            <div style={{position:"absolute",left:-17,top:4,width:10,height:10,borderRadius:"50%",background:i===0?"#34d399":"#1e293b",border:`2px solid ${i===0?"#34d399":"#2d3a52"}`,boxShadow:i===0?"0 0 8px rgba(52,211,153,.5)":"none",flexShrink:0}}/>
-            <div style={{background:"#141c2e",border:"1px solid #2a3650",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#e2e8f0",lineHeight:1.5,flex:1}}>
-              {t}
-              {i===0&&<span style={{marginLeft:8,fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1}}>ATIVO</span>}
-            </div>
-          </div>
+    <div style={{background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:14,padding:"14px 18px",marginBottom:16}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#fbbf24",marginBottom:10}}>Provedores Concorrentes Prováveis</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {competidores.map((c,i)=>(
+          <span key={i} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.25)",borderRadius:8,padding:"5px 12px",fontSize:11.5,color:"#fbbf24",fontWeight:600}}>{c}</span>
         ))}
       </div>
+      <div style={{fontSize:10.5,color:"#7d8ca8",marginTop:10}}>Use como referência para posicionamento competitivo na discovery. Pergunte qual desses está sendo avaliado ou já é utilizado.</div>
     </div>
   );
 }
@@ -308,12 +513,10 @@ export default function App() {
   const [batchProg, setBatchProg]       = useState({done:0,total:0});
   const [mode, setMode]                 = useState("single");
   const [selectedBatch, setSelectedBatch] = useState(null);
-  const [expandedSection, setExpandedSection] = useState(null);
   const reportRef  = useRef(null);
   const csvRef     = useRef(null);
   const ctxRef     = useRef(null);
 
-  // ── API ──────────────────────────────────────────────────────────────────
   async function searchTavily(company, context) {
     const res = await fetch("/api/search", {
       method:"POST",
@@ -326,22 +529,22 @@ export default function App() {
 
   function injectContext(d, ctx) {
     if (!ctx||!d) return d;
-    return {...d, noticias:[{titulo:"Documento enviado (RI / contexto)",resumo:ctx.slice(0,240)+(ctx.length>240?"...":""),relevancia:"Contexto de upload — use para personalizar a abordagem",url:""},...(d.noticias||[])]};
+    return {...d, noticias:[{titulo:"Documento enviado pelo usuário (RI / Relatório)",resumo:ctx.slice(0,300)+(ctx.length>300?"...":""),relevancia:"Contexto interno — use para personalizar a abordagem e identificar iniciativas estratégicas",url:""},...(d.noticias||[])]};
   }
 
-  // ── SINGLE ANALYZE ──────────────────────────────────────────────────────
   async function analyze() {
     if (!input.trim()||loading) return;
     setLoading(true); setError(""); setData(null);
     try {
-      setStep("Pesquisando dados atualizados...");
+      setStep("Pesquisando informações atualizadas...");
       try {
         const resp = await searchTavily(input.trim(), contextText);
+        setStep("Construindo raio-x com dados reais...");
         let d = buildAccountData(input.trim(), resp.results);
         d = injectContext(d, contextText);
         setData(d); setLiveMode(true);
       } catch(e) {
-        setError("Busca online indisponível ("+e.message+"). Usando modo offline.");
+        setError("Busca online indisponível ("+e.message+"). Usando base de conhecimento.");
         let d = buildAccountData(input.trim(), null);
         d = injectContext(d, contextText);
         setData(d); setLiveMode(false);
@@ -350,7 +553,6 @@ export default function App() {
     finally { setLoading(false); setStep(""); }
   }
 
-  // ── BATCH ───────────────────────────────────────────────────────────────
   async function runBatch() {
     if (!batchList.length||loading) return;
     setLoading(true); setError(""); setBatchResults([]); setSelectedBatch(null);
@@ -372,13 +574,12 @@ export default function App() {
     setLoading(false); setStep("");
   }
 
-  // ── FILE HANDLERS ────────────────────────────────────────────────────────
   function handleCSV(e) {
     const file=e.target.files?.[0]; if(!file) return;
     const reader=new FileReader();
     reader.onload=()=>{
       const companies=parseCSV(String(reader.result||""));
-      if(!companies.length){setError("Nenhuma empresa encontrada no CSV. Verifique o formato.");return;}
+      if(!companies.length){setError("Nenhuma empresa encontrada no CSV.");return;}
       setBatchList(companies); setMode("batch"); setError("");
     };
     reader.readAsText(file);
@@ -399,242 +600,244 @@ export default function App() {
     } catch(err) { setLoading(false); setStep(""); setError("Erro ao ler arquivo: "+err.message); }
   }
 
-  // ── PDF EXPORT ───────────────────────────────────────────────────────────
   function exportPDF() {
     if (!reportRef.current) return;
     const w=window.open("","_blank");
     w.document.write(`<!DOCTYPE html><html><head><title>Account Map - ${data?.empresa?.nome}</title>
-    <style>body{font-family:Verdana,sans-serif;padding:32px;color:#0f172a;font-size:12px;line-height:1.6}h1{font-size:20px;margin-bottom:4px}h2{font-size:11px;font-weight:700;margin:16px 0 8px;border-bottom:2px solid #e2e8f0;padding-bottom:3px;text-transform:uppercase;color:#475569}.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px}ul{list-style:none;padding:0}li{padding:3px 0 3px 12px;position:relative}li:before{content:"→";position:absolute;left:0;color:#22c55e}.msg{background:#f8fafc;border-left:3px solid #22c55e;padding:10px;white-space:pre-wrap;margin:6px 0;font-size:11px}.sk{border:1px solid #e2e8f0;border-radius:6px;padding:8px;margin-bottom:6px}.tag{display:inline-block;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:1px 7px;margin:2px;font-size:10px}.footer{margin-top:20px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:10px;color:#94a3b8}</style>
+    <style>body{font-family:Verdana,sans-serif;padding:32px;color:#0f172a;font-size:12px;line-height:1.7}h1{font-size:22px;margin-bottom:4px;font-weight:800}h2{font-size:10px;font-weight:700;margin:18px 0 8px;border-bottom:2px solid #e2e8f0;padding-bottom:4px;text-transform:uppercase;letter-spacing:1.5px;color:#475569}.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px}ul{list-style:none;padding:0}li{padding:4px 0 4px 14px;position:relative;color:#334155}li:before{content:"→";position:absolute;left:0;color:#22c55e}.msg{background:#f8fafc;border-left:3px solid #22c55e;padding:12px;white-space:pre-wrap;margin:8px 0;font-size:11.5px;border-radius:0 6px 6px 0}.sk{border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px}.tag{display:inline-block;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px;margin:2px;font-size:10px}.footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px;font-size:10px;color:#94a3b8}</style>
     </head><body>${reportRef.current.innerHTML}
     <div class="footer">Account Mapper Pro V2 · Andrei Heimann · Certta · ${new Date().toLocaleDateString("pt-BR")}</div>
     </body></html>`);
     w.document.close(); setTimeout(()=>w.print(),500);
   }
 
-  // ── DERIVED ──────────────────────────────────────────────────────────────
   const consolidated = batchResults.length>0 ? buildConsolidated(batchResults) : null;
   const sk = scoreKey(data?.fit?.score);
   const ss = scoreColors[sk];
-  const toggle = (s) => setExpandedSection(expandedSection===s?null:s);
+  const safeData = data || {};
 
-  // ── CSS ──────────────────────────────────────────────────────────────────
   const css = `
 *{box-sizing:border-box}
-.inp{width:100%;background:#1a2438;border:1.5px solid #2d3a52;border-radius:12px;padding:13px 16px;font-size:13px;color:#f1f5f9;font-family:Verdana,sans-serif;outline:none;transition:all .2s}
-.inp:focus{border-color:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.12)}
-.inp::placeholder{color:#64748b}
-.btn{background:linear-gradient(135deg,#34d399,#22c55e);color:#06231a;border:none;border-radius:12px;padding:13px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(52,211,153,.25);transition:all .2s}
-.btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(52,211,153,.35)}
-.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
-.btn2{background:rgba(52,211,153,.1);color:#34d399;border:1.5px solid rgba(52,211,153,.4);border-radius:10px;padding:9px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;transition:all .2s}
-.btn2:hover{background:rgba(52,211,153,.18)}
-.btn3{background:rgba(255,255,255,.04);color:#cbd5e1;border:1.5px solid #3a4762;border-radius:10px;padding:9px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;transition:all .2s}
-.btn3:hover{background:rgba(255,255,255,.08);border-color:#4a5878}
-.card{background:linear-gradient(160deg,#1a2438,#161e30);border:1px solid #2d3a52;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25);transition:box-shadow .2s}
-.card:hover{box-shadow:0 6px 32px rgba(0,0,0,.35)}
-.ct{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#34d399;margin-bottom:14px}
-.row{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #232f47;font-size:12.5px;color:#e2e8f0;line-height:1.55}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(52,211,153,.3)}50%{box-shadow:0 0 20px rgba(52,211,153,.6)}}
+.inp{width:100%;background:#1a2438;border:1.5px solid #2d3a52;border-radius:12px;padding:13px 16px;font-size:13px;color:#f1f5f9;font-family:Verdana,sans-serif;outline:none;transition:all .25s}
+.inp:focus{border-color:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.12),0 2px 8px rgba(0,0,0,.2)}
+.inp::placeholder{color:#4a5878}
+.btn{background:linear-gradient(135deg,#34d399,#059669);color:#022c1a;border:none;border-radius:12px;padding:13px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;white-space:nowrap;box-shadow:0 4px 16px rgba(52,211,153,.3);transition:all .2s;letter-spacing:.3px}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(52,211,153,.4)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.btn2{background:rgba(52,211,153,.12);color:#34d399;border:1.5px solid rgba(52,211,153,.35);border-radius:10px;padding:9px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;transition:all .2s}
+.btn2:hover{background:rgba(52,211,153,.2);border-color:rgba(52,211,153,.6)}
+.btn3{background:rgba(255,255,255,.03);color:#a3b1c9;border:1.5px solid #2d3a52;border-radius:10px;padding:9px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;transition:all .2s}
+.btn3:hover{background:rgba(255,255,255,.07);border-color:#4a5878;color:#e2e8f0}
+.card{background:linear-gradient(145deg,#1a2438 0%,#141c2e 100%);border:1px solid #2d3a52;border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);transition:all .25s}
+.card:hover{box-shadow:0 8px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);transform:translateY(-1px)}
+.ct{font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#34d399;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.ct::before{content:"";display:inline-block;width:3px;height:12px;background:linear-gradient(180deg,#34d399,#059669);border-radius:2px}
+.row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(35,47,71,.8);font-size:12.5px;color:#e2e8f0;line-height:1.6;transition:background .2s}
 .row:last-child{border-bottom:none}
-.sk{background:#141c2e;border:1px solid #2a3650;border-radius:12px;padding:13px 15px;margin-bottom:8px;transition:border-color .2s}
-.sk:hover{border-color:#34d399}
-.msg{background:#141c2e;border-left:3px solid #34d399;border-radius:0 10px 10px 0;padding:14px 16px;font-size:12.5px;color:#e2e8f0;white-space:pre-wrap;line-height:1.75}
-.spinq{background:#141c2e;border:1px solid #2a3650;border-radius:10px;padding:11px 13px;font-size:12.5px;color:#e2e8f0;margin-bottom:7px;display:flex;gap:9px;line-height:1.5;transition:border-color .2s}
-.spinq:hover{border-color:#34d399}
-.spinq::before{content:"?";color:#34d399;font-weight:700;flex-shrink:0}
-.obj{background:#141c2e;border:1px solid #2a3650;border-radius:10px;padding:12px 14px;margin-bottom:9px}
-.news{background:#141c2e;border:1px solid #2a3650;border-radius:12px;padding:13px 15px;margin-bottom:9px;transition:border-color .2s}
-.news:hover{border-color:#34d399}
-.pill{display:inline-block;padding:3px 11px;border-radius:20px;font-size:10.5px;font-weight:700;margin:3px}
-.dot{width:9px;height:9px;border-radius:50%;background:#34d399;animation:p 1.2s ease-in-out infinite;flex-shrink:0}
-@keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
-.fade{animation:fi .45s cubic-bezier(.22,1,.36,1) forwards}
-@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.row:hover{background:rgba(52,211,153,.03);border-radius:6px;padding-left:6px}
+.sk{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:14px;padding:14px 16px;margin-bottom:10px;transition:all .25s;cursor:default}
+.sk:hover{border-color:rgba(52,211,153,.4);box-shadow:0 4px 16px rgba(52,211,153,.08);transform:translateY(-1px)}
+.msg{background:linear-gradient(145deg,#141c2e,#0f1626);border-left:3px solid #34d399;border-radius:0 12px 12px 0;padding:16px 18px;font-size:12.5px;color:#e2e8f0;white-space:pre-wrap;line-height:1.8}
+.spinq{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#e2e8f0;margin-bottom:8px;display:flex;gap:10px;line-height:1.6;transition:all .2s}
+.spinq:hover{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.04)}
+.spinq::before{content:"?";color:#34d399;font-weight:800;flex-shrink:0;font-size:14px}
+.obj{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:border-color .2s}
+.obj:hover{border-color:rgba(251,191,36,.3)}
+.news{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:14px;padding:14px 16px;margin-bottom:10px;transition:all .2s}
+.news:hover{border-color:rgba(52,211,153,.35);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10.5px;font-weight:700;margin:3px;letter-spacing:.3px}
+.dot{width:9px;height:9px;border-radius:50%;background:#34d399;animation:pulse 1.2s ease-in-out infinite;flex-shrink:0}
+.fade{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) forwards}
+.upload-zone{border:2px dashed #2d3a52;border-radius:16px;padding:32px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(26,36,56,.3)}
+.upload-zone:hover{border-color:#34d399;background:rgba(52,211,153,.06);transform:scale(1.01)}
+.batch-card{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2d3a52;border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-align:left;font-family:Verdana,sans-serif;width:100%}
+.batch-card:hover{border-color:#34d399;transform:translateY(-2px);box-shadow:0 6px 20px rgba(52,211,153,.12)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.section-toggle{width:100%;text-align:left;background:none;border:none;cursor:pointer;color:inherit;font-family:Verdana,sans-serif;padding:0;display:flex;align-items:center;justify-content:space-between}
-.upload-zone{border:2px dashed #2d3a52;border-radius:14px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(26,36,56,.4)}
-.upload-zone:hover{border-color:#34d399;background:rgba(52,211,153,.05)}
-.batch-card{background:#141c2e;border:1px solid #2d3a52;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .2s}
-.batch-card:hover{border-color:#34d399;transform:translateY(-1px);box-shadow:0 4px 14px rgba(52,211,153,.1)}
-@media(max-width:580px){.g2{grid-template-columns:1fr}}
+.live-badge{animation:glow 2s ease-in-out infinite}
+@media(max-width:600px){.g2{grid-template-columns:1fr}}
 `;
 
-  // ── RENDER ───────────────────────────────────────────────────────────────
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#0f1626,#0b1120)",fontFamily:"Verdana,Geneva,sans-serif",color:"#f1f5f9"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0c1420 0%,#080e1a 50%,#0a1220 100%)",fontFamily:"Verdana,Geneva,sans-serif",color:"#f1f5f9"}}>
       <style>{css}</style>
 
-      {/* ── HEADER ── */}
-      <div style={{borderBottom:"1px solid #232f47",padding:"14px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(15,22,38,.92)",backdropFilter:"blur(16px)",position:"sticky",top:0,zIndex:100}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:38,height:38,background:"linear-gradient(135deg,#34d399,#10b981)",borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px rgba(52,211,153,.35)"}}>
+      {/* HEADER */}
+      <div style={{borderBottom:"1px solid rgba(45,58,82,.7)",padding:"14px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(12,20,32,.92)",backdropFilter:"blur(20px)",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 24px rgba(0,0,0,.4)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:40,height:40,background:"linear-gradient(135deg,#34d399,#059669)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(52,211,153,.4)"}}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="#06231a" strokeWidth="1.8" opacity="0.35"/>
-              <circle cx="12" cy="12" r="5" stroke="#06231a" strokeWidth="1.8" opacity="0.6"/>
-              <circle cx="12" cy="12" r="2" fill="#06231a"/>
-              <path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="#06231a" strokeWidth="1.8" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="9" stroke="#022c1a" strokeWidth="1.8" opacity="0.3"/>
+              <circle cx="12" cy="12" r="5" stroke="#022c1a" strokeWidth="1.8" opacity="0.55"/>
+              <circle cx="12" cy="12" r="2" fill="#022c1a"/>
+              <path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="#022c1a" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
           </div>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:"#f8fafc"}}>Account Mapper by Andrei Heimann</div>
-            <div style={{fontSize:9,color:"#34d399",letterSpacing:1.2}}>ENTERPRISE PROSPECTING TOOL <span style={{color:"#2d3a52"}}>·</span> V2</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#f8fafc",letterSpacing:"-0.2px"}}>Account Mapper by Andrei Heimann</div>
+            <div style={{fontSize:8.5,color:"#34d399",letterSpacing:1.5,fontWeight:700}}>ENTERPRISE PROSPECTING TOOL <span style={{color:"#2d3a52"}}>·</span> V2</div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:9,fontWeight:700,letterSpacing:1,padding:"4px 10px",borderRadius:20,border:`1px solid ${liveMode?"#34d399":"#3a4762"}`,color:liveMode?"#34d399":"#7d8ca8",background:liveMode?"rgba(52,211,153,.1)":"transparent"}}>
+          <span className={liveMode?"live-badge":""} style={{fontSize:9,fontWeight:700,letterSpacing:1,padding:"5px 12px",borderRadius:20,border:`1px solid ${liveMode?"#34d399":"#2d3a52"}`,color:liveMode?"#34d399":"#4a5878",background:liveMode?"rgba(52,211,153,.1)":"transparent",transition:"all .3s"}}>
             {liveMode?"● LIVE":"○ OFFLINE"}
           </span>
           {data&&<button className="btn2" onClick={exportPDF}>↓ PDF</button>}
         </div>
       </div>
 
-      <div style={{maxWidth:920,margin:"0 auto",padding:"28px 18px"}}>
+      <div style={{maxWidth:940,margin:"0 auto",padding:"28px 20px"}}>
 
-        {/* ── TABS ── */}
-        <div style={{display:"flex",gap:6,marginBottom:24,background:"#141c2e",border:"1px solid #2d3a52",borderRadius:14,padding:5,width:"fit-content",boxShadow:"0 2px 12px rgba(0,0,0,.2)"}}>
+        {/* TABS */}
+        <div style={{display:"flex",gap:4,marginBottom:28,background:"rgba(20,28,46,.8)",border:"1px solid #2d3a52",borderRadius:16,padding:5,width:"fit-content",boxShadow:"0 4px 16px rgba(0,0,0,.3)"}}>
           {[["single","🎯  Análise Individual"],["batch","📂  Lote (CSV)"]].map(([m,label])=>(
-            <button key={m} onClick={()=>{setMode(m);setError("");}} style={{padding:"9px 20px",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"Verdana,sans-serif",fontSize:12,fontWeight:700,transition:"all .2s",background:mode===m?"linear-gradient(135deg,#34d399,#22c55e)":"transparent",color:mode===m?"#06231a":"#a3b1c9"}}>
+            <button key={m} onClick={()=>{setMode(m);setError("");}} style={{padding:"10px 22px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"Verdana,sans-serif",fontSize:12,fontWeight:700,transition:"all .2s",background:mode===m?"linear-gradient(135deg,#34d399,#059669)":"transparent",color:mode===m?"#022c1a":"#7d8ca8",boxShadow:mode===m?"0 2px 12px rgba(52,211,153,.25)":"none"}}>
               {label}
             </button>
           ))}
         </div>
 
-        {/* ── SINGLE MODE ── */}
+        {/* SINGLE MODE */}
         {mode==="single"&&(
-          <div style={{marginBottom:36}}>
-            <div style={{fontSize:22,fontWeight:700,color:"#f8fafc",marginBottom:4,letterSpacing:"-0.3px"}}>Account Mapper Pro</div>
-            <div style={{fontSize:12.5,color:"#a3b1c9",marginBottom:20}}>Digite o nome ou cole o site da empresa para gerar o mapeamento completo com dados atualizados.</div>
+          <div style={{marginBottom:36,animation:"fadeUp .4s ease"}}>
+            <div style={{fontSize:24,fontWeight:800,color:"#f8fafc",marginBottom:5,letterSpacing:"-0.5px"}}>Account Mapper Pro</div>
+            <div style={{fontSize:12.5,color:"#7d8ca8",marginBottom:24,lineHeight:1.6}}>Digite o nome ou cole o site da empresa para gerar o mapeamento completo com dados atualizados em tempo real.</div>
 
-            <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
               {["Nome da empresa","Site (URL)"].map((label,i)=>{
                 const active=input.trim()?(i===0?!isUrl(input):isUrl(input)):i===0;
-                return <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",padding:"4px 11px",borderRadius:20,border:`1px solid ${active?"#34d399":"#2d3a52"}`,color:active?"#34d399":"#64748b",background:active?"rgba(52,211,153,.1)":"transparent",transition:"all .2s"}}>{label}</span>;
+                return <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",padding:"5px 12px",borderRadius:20,border:`1px solid ${active?"#34d399":"#2d3a52"}`,color:active?"#34d399":"#4a5878",background:active?"rgba(52,211,153,.12)":"transparent",transition:"all .25s"}}>{label}</span>;
               })}
             </div>
 
             <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
               <input className="inp" style={{flex:1,minWidth:220}} placeholder="Banco Inter   ou   https://bancointer.com.br" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&analyze()}/>
-              <button className="btn" onClick={analyze} disabled={loading||!input.trim()}>{loading?"Analisando...":"Analisar"}</button>
+              <button className="btn" onClick={analyze} disabled={loading||!input.trim()}>{loading?"Analisando...":"Analisar →"}</button>
             </div>
 
-            {/* Context upload */}
-            <div style={{marginTop:14,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div style={{marginTop:16,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
               <input ref={ctxRef} type="file" accept=".pdf,.txt,.md" onChange={handleContext} style={{display:"none"}}/>
-              <button className="btn3" onClick={()=>ctxRef.current?.click()} style={{fontSize:11,display:"flex",alignItems:"center",gap:6}}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Anexar contexto (RI / PDF / TXT)
+              <button className="btn3" onClick={()=>ctxRef.current?.click()} style={{fontSize:11,display:"flex",alignItems:"center",gap:7}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                Anexar RI / Relatório (PDF ou TXT)
               </button>
               {contextFileName&&(
-                <span style={{fontSize:11,color:"#34d399",display:"flex",alignItems:"center",gap:6,background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.25)",borderRadius:8,padding:"5px 10px"}}>
-                  ✓ {contextFileName}
-                  <button onClick={()=>{setContextText("");setContextFileName("");}} style={{background:"none",border:"none",color:"#7d8ca8",cursor:"pointer",fontSize:14,lineHeight:1}}>×</button>
+                <span style={{fontSize:11,color:"#34d399",display:"flex",alignItems:"center",gap:7,background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.2)",borderRadius:10,padding:"6px 12px"}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {contextFileName}
+                  <button onClick={()=>{setContextText("");setContextFileName("");}} style={{background:"none",border:"none",color:"#4a5878",cursor:"pointer",fontSize:16,lineHeight:1,marginLeft:2}}>×</button>
                 </span>
               )}
             </div>
-            <div style={{fontSize:10.5,color:"#7d8ca8",marginTop:8}}>Anexe um resumo de RI ou relatório — o conteúdo enriquece a análise.</div>
+            <div style={{fontSize:10.5,color:"#4a5878",marginTop:8}}>Conteúdo do arquivo é extraído e incorporado à análise como contexto adicional.</div>
 
-            {loading&&<div style={{display:"flex",alignItems:"center",gap:10,marginTop:14}}><div className="dot"/><span style={{fontSize:12,color:"#a3b1c9"}}>{step}</span></div>}
-            {error&&<div style={{marginTop:12,color:"#f87171",fontSize:12,background:"rgba(248,113,113,.08)",border:"1px solid rgba(248,113,113,.2)",borderRadius:10,padding:"10px 14px"}}>⚠ {error}</div>}
+            {loading&&(
+              <div style={{display:"flex",alignItems:"center",gap:12,marginTop:16,background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.15)",borderRadius:12,padding:"12px 16px"}}>
+                <div className="dot"/>
+                <span style={{fontSize:12.5,color:"#a3b1c9"}}>{step}</span>
+              </div>
+            )}
+            {error&&<div style={{marginTop:12,color:"#fca5a5",fontSize:12,background:"rgba(248,113,113,.07)",border:"1px solid rgba(248,113,113,.2)",borderRadius:12,padding:"12px 16px"}}>⚠ {error}</div>}
           </div>
         )}
 
-        {/* ── BATCH MODE ── */}
+        {/* BATCH MODE */}
         {mode==="batch"&&(
-          <div style={{marginBottom:36}}>
-            <div style={{fontSize:22,fontWeight:700,color:"#f8fafc",marginBottom:4,letterSpacing:"-0.3px"}}>Análise em Lote</div>
-            <div style={{fontSize:12.5,color:"#a3b1c9",marginBottom:20}}>
-              Envie um CSV com colunas <code style={{background:"#141c2e",padding:"2px 7px",borderRadius:5,fontSize:11,color:"#34d399"}}>nome,site</code> para gerar raio-x individual e consolidado. Máximo {BATCH_LIMIT} empresas por rodada.
-            </div>
+          <div style={{marginBottom:36,animation:"fadeUp .4s ease"}}>
+            <div style={{fontSize:24,fontWeight:800,color:"#f8fafc",marginBottom:5,letterSpacing:"-0.5px"}}>Análise em Lote</div>
+            <div style={{fontSize:12.5,color:"#7d8ca8",marginBottom:24}}>Envie um CSV para gerar raio-x individual e painel consolidado. Máximo {BATCH_LIMIT} empresas por rodada.</div>
 
-            {/* Template download hint */}
-            <div style={{background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.2)",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:11.5,color:"#a3b1c9"}}>
-              <b style={{color:"#34d399"}}>Formato do CSV:</b> primeira linha = cabeçalho <code style={{background:"#141c2e",padding:"1px 6px",borderRadius:4,color:"#34d399",fontSize:10}}>nome,site</code> — depois uma empresa por linha.
-              <div style={{marginTop:5,fontFamily:"monospace",fontSize:10.5,color:"#7d8ca8"}}>
+            <div style={{background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.18)",borderRadius:14,padding:"14px 18px",marginBottom:20}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#34d399",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Formato esperado do CSV</div>
+              <code style={{display:"block",fontFamily:"monospace",fontSize:11,color:"#a3b1c9",lineHeight:1.8,background:"rgba(0,0,0,.2)",padding:"10px 14px",borderRadius:8}}>
                 nome,site<br/>
                 Banco Inter,https://bancointer.com.br<br/>
-                Stone,https://stone.com.br
-              </div>
+                Stone,https://stone.com.br<br/>
+                Nubank,https://nubank.com.br
+              </code>
             </div>
 
             <input ref={csvRef} type="file" accept=".csv,.txt" onChange={handleCSV} style={{display:"none"}}/>
-
-            {!batchList.length ? (
+            {!batchList.length?(
               <div className="upload-zone" onClick={()=>csvRef.current?.click()}>
-                <div style={{fontSize:32,marginBottom:10}}>📂</div>
-                <div style={{fontSize:14,fontWeight:700,color:"#e2e8f0",marginBottom:4}}>Selecionar arquivo CSV</div>
-                <div style={{fontSize:11.5,color:"#7d8ca8"}}>Clique aqui ou arraste o arquivo</div>
+                <div style={{fontSize:36,marginBottom:12}}>📂</div>
+                <div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",marginBottom:5}}>Selecionar arquivo CSV</div>
+                <div style={{fontSize:12,color:"#4a5878"}}>Clique aqui ou arraste o arquivo</div>
               </div>
             ):(
               <div>
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
-                  <div style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",borderRadius:10,padding:"8px 14px",fontSize:12,color:"#34d399",fontWeight:700}}>
-                    ✓ {batchList.length} empresa{batchList.length>1?"s":""} detectada{batchList.length>1?"s":""}
-                    {batchList.length>BATCH_LIMIT&&<span style={{color:"#fbbf24"}}> — analisando as primeiras {BATCH_LIMIT}</span>}
+                  <div style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",borderRadius:12,padding:"9px 16px",fontSize:12.5,color:"#34d399",fontWeight:700}}>
+                    ✓ {batchList.length} empresa{batchList.length>1?"s":""} carregada{batchList.length>1?"s":""}
+                    {batchList.length>BATCH_LIMIT&&<span style={{color:"#fbbf24"}}> — processando as primeiras {BATCH_LIMIT}</span>}
                   </div>
                   <button className="btn3" style={{fontSize:11}} onClick={()=>{setBatchList([]);setBatchResults([]);setSelectedBatch(null);setData(null);}}>× Limpar</button>
-                  <button className="btn" onClick={runBatch} disabled={loading}>{loading?"Processando...":"Analisar Lote"}</button>
+                  <button className="btn" onClick={runBatch} disabled={loading}>{loading?"Processando...":"Analisar Lote →"}</button>
                 </div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {batchList.slice(0,BATCH_LIMIT).map((c,i)=>(
-                    <span key={i} className="pill" style={{background:"#141c2e",border:"1px solid #2d3a52",color:"#a3b1c9"}}>{c}</span>
+                    <span key={i} className="pill" style={{background:"rgba(26,36,56,.8)",border:"1px solid #2d3a52",color:"#a3b1c9"}}>{c}</span>
                   ))}
                 </div>
               </div>
             )}
 
             {loading&&(
-              <div style={{marginTop:18}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}><div className="dot"/><span style={{fontSize:12,color:"#a3b1c9"}}>{step}</span></div>
-                  <span style={{fontSize:11,color:"#7d8ca8"}}>{batchProg.done}/{batchProg.total}</span>
+              <div style={{marginTop:20,background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.15)",borderRadius:14,padding:"16px 20px"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}><div className="dot"/><span style={{fontSize:12.5,color:"#a3b1c9"}}>{step}</span></div>
+                  <span style={{fontSize:12,color:"#34d399",fontWeight:700}}>{batchProg.done}/{batchProg.total}</span>
                 </div>
-                <div style={{height:6,background:"#141c2e",borderRadius:10,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${batchProg.total?(batchProg.done/batchProg.total)*100:0}%`,background:"linear-gradient(90deg,#34d399,#22c55e)",transition:"width .4s",boxShadow:"0 0 8px rgba(52,211,153,.4)"}}/>
+                <div style={{height:8,background:"#141c2e",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${batchProg.total?(batchProg.done/batchProg.total)*100:0}%`,background:"linear-gradient(90deg,#34d399,#059669)",transition:"width .5s cubic-bezier(.22,1,.36,1)",boxShadow:"0 0 12px rgba(52,211,153,.5)",borderRadius:10}}/>
                 </div>
               </div>
             )}
-            {error&&<div style={{marginTop:12,color:"#f87171",fontSize:12,background:"rgba(248,113,113,.08)",border:"1px solid rgba(248,113,113,.2)",borderRadius:10,padding:"10px 14px"}}>⚠ {error}</div>}
+            {error&&<div style={{marginTop:12,color:"#fca5a5",fontSize:12,background:"rgba(248,113,113,.07)",border:"1px solid rgba(248,113,113,.2)",borderRadius:12,padding:"12px 16px"}}>⚠ {error}</div>}
           </div>
         )}
 
-        {/* ── CONSOLIDATED ── */}
+        {/* CONSOLIDATED */}
         {mode==="batch"&&consolidated&&!selectedBatch&&(
           <div className="fade">
             <div className="card" style={{marginBottom:20}}>
-              <div className="ct">📊 Consolidado do Lote</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20}}>
-                {[["Total",consolidated.total,"#34d399"],["Fit Alto",consolidated.byScore.ALTO,"#34d399"],["Fit Médio",consolidated.byScore.MEDIO,"#fbbf24"],["Tier 1",consolidated.byTier["Tier 1"].length,"#34d399"],["Tier 2",consolidated.byTier["Tier 2"].length,"#fbbf24"]].map(([l,v,c])=>(
-                  <div key={l} style={{background:"#141c2e",borderRadius:12,padding:"14px 12px",textAlign:"center",border:"1px solid #2d3a52"}}>
-                    <div style={{fontSize:28,fontWeight:800,color:c,lineHeight:1}}>{v}</div>
-                    <div style={{fontSize:9,color:"#a3b1c9",textTransform:"uppercase",letterSpacing:1,marginTop:4}}>{l}</div>
+              <div className="ct">Painel Consolidado do Lote</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:22}}>
+                {[["Total Analisadas",consolidated.total,"#34d399"],["Fit Alto",consolidated.byScore.ALTO,"#34d399"],["Fit Médio",consolidated.byScore.MEDIO,"#fbbf24"],["Fit Baixo",consolidated.byScore.BAIXO,"#f87171"],["Tier 1",consolidated.byTier["Tier 1"].length,"#34d399"],["Tier 2",consolidated.byTier["Tier 2"].length,"#fbbf24"]].map(([l,v,c])=>(
+                  <div key={l} style={{background:"linear-gradient(145deg,#141c2e,#0f1626)",borderRadius:14,padding:"16px 12px",textAlign:"center",border:`1px solid rgba(45,58,82,.8)`}}>
+                    <div style={{fontSize:30,fontWeight:800,color:c,lineHeight:1,textShadow:`0 0 20px ${c}44`}}>{v}</div>
+                    <div style={{fontSize:9,color:"#7d8ca8",textTransform:"uppercase",letterSpacing:1,marginTop:5}}>{l}</div>
                   </div>
                 ))}
               </div>
-
-              {/* Sector distribution bar */}
-              <div style={{marginBottom:16}}>
+              <div style={{marginBottom:18}}>
                 <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Distribuição por setor</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {Object.entries(consolidated.setores).map(([s,n])=>(
-                    <span key={s} className="pill" style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399"}}>{s}: {n}</span>
+                    <span key={s} className="pill" style={{background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.25)",color:"#34d399"}}>{s}: {n}</span>
                   ))}
                 </div>
               </div>
-
-              <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>Contas — clique para ver o raio-x completo</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))",gap:10}}>
+              <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>Contas analisadas — clique para abrir o raio-x completo</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
                 {batchResults.map((b,i)=>{
                   const bsk=scoreKey(b.data?.fit?.score);
                   const bss=scoreColors[bsk];
                   return (
-                    <div key={i} className="batch-card" onClick={()=>{setSelectedBatch(b);setData(b.data);setLiveMode(b.liveMode);}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",marginBottom:6}}>{b.company}</div>
-                      <div style={{fontSize:9,color:"#7d8ca8",marginBottom:8}}>{b.data?.empresa?.setor||""}</div>
+                    <button key={i} className="batch-card" onClick={()=>{setSelectedBatch(b);setData(b.data);setLiveMode(b.liveMode);}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",marginBottom:4}}>{b.company}</div>
+                      <div style={{fontSize:10,color:"#7d8ca8",marginBottom:10}}>{b.data?.empresa?.setor||""}</div>
                       <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        <span style={{fontSize:10,fontWeight:700,color:bss?.text,background:bss?.bg,border:`1px solid ${bss?.border}`,padding:"2px 8px",borderRadius:20}}>FIT {b.data?.fit?.score}</span>
-                        <span style={{fontSize:10,color:tierColors[b.data?.estrategia?.tier]||"#7d8ca8",fontWeight:700}}>{b.data?.estrategia?.tier}</span>
-                        <span style={{fontSize:9,color:b.liveMode?"#34d399":"#7d8ca8",marginLeft:"auto"}}>{b.liveMode?"● live":"○ off"}</span>
+                        <span style={{fontSize:9,fontWeight:700,color:bss?.text,background:bss?.bg,border:`1px solid ${bss?.border}`,padding:"3px 9px",borderRadius:20}}>FIT {b.data?.fit?.score}</span>
+                        <span style={{fontSize:9,color:tierColors[b.data?.estrategia?.tier]||"#7d8ca8",fontWeight:700}}>{b.data?.estrategia?.tier}</span>
+                        <span style={{fontSize:9,color:b.liveMode?"#34d399":"#4a5878",marginLeft:"auto"}}>{b.liveMode?"● live":"○ base"}</span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -642,55 +845,56 @@ export default function App() {
           </div>
         )}
 
-        {/* Back button from batch detail */}
         {mode==="batch"&&selectedBatch&&(
-          <button className="btn3" style={{marginBottom:16,display:"flex",alignItems:"center",gap:6}} onClick={()=>{setSelectedBatch(null);setData(null);}}>
-            ← Voltar ao consolidado
+          <button className="btn3" style={{marginBottom:18,display:"flex",alignItems:"center",gap:8}} onClick={()=>{setSelectedBatch(null);setData(null);}}>
+            ← Voltar ao painel consolidado
           </button>
         )}
 
-        {/* ── REPORT ── */}
+        {/* REPORT */}
         {data&&(
           <div className="fade">
-
             {/* Print layer */}
             <div ref={reportRef} style={{display:"none"}}>
-              <h1>{data.empresa?.nome}</h1>
-              <p>{data.empresa?.setor} · {data.empresa?.sede}</p>
-              <div className="g2" style={{marginTop:12}}>
-                <div className="card"><h2>Empresa</h2><ul>{[["Faturamento",data.empresa?.faturamento],["Tamanho",data.empresa?.tamanho],["Estágio",data.empresa?.estagio],["Bolsa",data.empresa?.bolsa]].map(([k,v])=>v&&<li key={k}><b>{k}:</b> {v}</li>)}</ul></div>
-                <div className="card"><h2>Fit — {data.fit?.score}</h2><p>{data.fit?.justificativa}</p></div>
-              </div>
-              <h2>Dores</h2><ul>{safeArr(data.dores?.principais).map((d,i)=><li key={i}>{d}</li>)}</ul>
-              <h2>Triggers</h2><ul>{safeArr(data.triggers).map((t,i)=><li key={i}>{t}</li>)}</ul>
-              <h2>Stakeholders</h2>{safeArr(data.stakeholders).map((s,i)=><div key={i} className="sk"><b>{s.cargo}{s.nome?" — "+s.nome:""}</b> [{s.prioridade}]<p style={{marginTop:4,color:"#475569"}}>{s.angulo}</p></div>)}
-              <h2>Notícias</h2>{safeArr(data.noticias).map((n,i)=><div key={i} className="card" style={{marginBottom:6}}><b>{n.titulo}</b><p style={{marginTop:4}}>{n.resumo}</p></div>)}
-              <h2>LinkedIn</h2><div className="msg">{data.estrategia?.mensagem_linkedin}</div>
-              <h2>Email — {data.estrategia?.mensagem_email_assunto}</h2><div className="msg">{data.estrategia?.mensagem_email_corpo}</div>
+              <h1>{safeData.empresa?.nome}</h1>
+              <p style={{color:"#475569",marginBottom:12}}>{safeData.empresa?.setor} · {safeData.empresa?.sede} · {safeData.empresa?.operacao}</p>
+              <p style={{marginBottom:16,lineHeight:1.7}}>{safeData.empresa?.resumo}</p>
               <div className="g2">
-                <div><h2>SPIN</h2><ul>{safeArr(data.estrategia?.perguntas_spin).map((q,i)=><li key={i}>{q}</li>)}</ul></div>
-                <div><h2>Objeções</h2>{safeArr(data.estrategia?.objecoes).map((o,i)=><div key={i} className="sk"><b>"{o.objecao}"</b><p style={{marginTop:4}}>→ {o.resposta}</p></div>)}</div>
+                <div className="card"><h2>Dados da Empresa</h2><ul>{[["Faturamento",safeData.empresa?.faturamento],["Tamanho",safeData.empresa?.tamanho],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa]].map(([k,v])=>v&&<li key={k}><b>{k}:</b> {v}</li>)}</ul></div>
+                <div className="card"><h2>Fit Certta — {safeData.fit?.score}</h2><p>{safeData.fit?.justificativa}</p></div>
               </div>
-              <div className="g2">
-                <div><h2>AE</h2><ul>{safeArr(data.proximos_passos?.ae).map((a,i)=><li key={i}>{a}</li>)}</ul></div>
-                <div><h2>BDR</h2><ul>{safeArr(data.proximos_passos?.bdr).map((a,i)=><li key={i}>{a}</li>)}</ul></div>
+              <h2>Soluções Certta Aplicáveis</h2><div>{safeArr(safeData.fit?.solucoes_certta).map((s,i)=><span key={i} className="tag">{s}</span>)}</div>
+              <h2>Use Cases</h2><ul>{safeArr(safeData.fit?.use_cases).map((u,i)=><li key={i}>{u}</li>)}</ul>
+              <h2>Dores Mapeadas</h2><ul>{safeArr(safeData.dores?.principais).map((d,i)=><li key={i}>{d}</li>)}</ul>
+              <h2>Exposição Regulatória</h2><ul>{safeArr(safeData.dores?.exposicao_regulatoria).map((r,i)=><li key={i}>{r}</li>)}</ul>
+              <h2>Gatilhos Comerciais</h2><ul>{safeArr(safeData.triggers).map((t,i)=><li key={i}>{t}</li>)}</ul>
+              <h2>Concorrentes Prováveis</h2><ul>{safeArr(safeData.mercado?.competidores_provedor).map((c,i)=><li key={i}>{c}</li>)}</ul>
+              <h2>Stakeholders</h2>{safeArr(safeData.stakeholders).map((s,i)=><div key={i} className="sk"><b>{s.cargo}</b> [{s.prioridade}] — Urgência: {s.urgencia}<p style={{marginTop:5,color:"#475569"}}>{s.angulo}</p></div>)}
+              <h2>Notícias e Contexto</h2>{safeArr(safeData.noticias).map((n,i)=><div key={i} className="card" style={{marginBottom:8}}><b>{n.titulo}</b><p style={{marginTop:4,color:"#475569"}}>{n.resumo}</p><p style={{marginTop:4,fontSize:10,color:"#22c55e"}}>{n.relevancia}</p></div>)}
+              <h2>Mensagem LinkedIn</h2><div className="msg">{safeData.estrategia?.mensagem_linkedin}</div>
+              <h2>E-mail — {safeData.estrategia?.mensagem_email_assunto}</h2><div className="msg">{safeData.estrategia?.mensagem_email_corpo}</div>
+              <h2>Perguntas SPIN</h2><ul>{safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=><li key={i}>{q}</li>)}</ul>
+              <h2>Objeções</h2>{safeArr(safeData.estrategia?.objecoes).map((o,i)=><div key={i} className="sk"><b>"{o.objecao}"</b><p style={{marginTop:4}}>→ {o.resposta}</p></div>)}
+              <div className="g2" style={{marginTop:16}}>
+                <div><h2>Ações do AE</h2><ul>{safeArr(safeData.proximos_passos?.ae).map((a,i)=><li key={i}>{a}</li>)}</ul></div>
+                <div><h2>Ações do BDR</h2><ul>{safeArr(safeData.proximos_passos?.bdr).map((a,i)=><li key={i}>{a}</li>)}</ul></div>
               </div>
-              <p style={{marginTop:10}}><b>Prazo:</b> {data.proximos_passos?.prazo}</p>
+              <p style={{marginTop:12}}><b>Prazo:</b> {safeData.proximos_passos?.prazo}</p>
             </div>
 
-            {/* Visual report header */}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22,flexWrap:"wrap",gap:12}}>
+            {/* VISUAL HEADER */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:16}}>
               <div style={{flex:1,minWidth:200}}>
-                <div style={{fontSize:22,fontWeight:700,color:"#f8fafc",letterSpacing:"-0.3px"}}>{data.empresa?.nome}</div>
-                <div style={{fontSize:11.5,color:"#a3b1c9",marginTop:5}}>{data.empresa?.setor} · {data.empresa?.sede} · {data.empresa?.operacao}</div>
-                <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
-                  <span style={{background:ss?.bg,border:`1.5px solid ${ss?.border}`,color:ss?.text,borderRadius:8,padding:"4px 14px",fontSize:10,fontWeight:700,letterSpacing:1}}>FIT {data.fit?.score}</span>
-                  <span style={{background:"#141c2e",border:`1.5px solid ${tierColors[data.estrategia?.tier]||"#475569"}`,color:tierColors[data.estrategia?.tier]||"#475569",borderRadius:8,padding:"4px 14px",fontSize:10,fontWeight:700}}>{data.estrategia?.tier}</span>
-                  <span style={{background:"#141c2e",border:"1px solid #2d3a52",borderRadius:8,padding:"4px 14px",fontSize:10,color:"#a3b1c9"}}>{data.empresa?.estagio}</span>
+                <div style={{fontSize:26,fontWeight:800,color:"#f8fafc",letterSpacing:"-0.5px",lineHeight:1.2,marginBottom:6}}>{safeData.empresa?.nome}</div>
+                <div style={{fontSize:12,color:"#7d8ca8",marginBottom:12}}>{safeData.empresa?.setor} · {safeData.empresa?.sede} · {safeData.empresa?.operacao}</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <span style={{background:ss?.bg,border:`1.5px solid ${ss?.border}`,color:ss?.text,borderRadius:10,padding:"5px 16px",fontSize:10,fontWeight:700,letterSpacing:1,boxShadow:`0 0 12px ${ss?.glow}`}}>FIT {safeData.fit?.score}</span>
+                  <span style={{background:"rgba(20,28,46,.8)",border:`1.5px solid ${tierColors[safeData.estrategia?.tier]||"#2d3a52"}`,color:tierColors[safeData.estrategia?.tier]||"#7d8ca8",borderRadius:10,padding:"5px 16px",fontSize:10,fontWeight:700}}>{safeData.estrategia?.tier}</span>
+                  <span style={{background:"rgba(20,28,46,.8)",border:"1px solid #2d3a52",borderRadius:10,padding:"5px 14px",fontSize:10,color:"#7d8ca8"}}>{safeData.empresa?.estagio}</span>
                 </div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
-                <ScoreGauge score={data.fit?.score}/>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:12}}>
+                <ScoreGauge score={safeData.fit?.score}/>
                 <div style={{display:"flex",gap:8}}>
                   <button className="btn2" onClick={exportPDF}>↓ PDF</button>
                   <button className="btn3" onClick={()=>{setData(null);setInput("");}}>Nova análise</button>
@@ -698,150 +902,205 @@ export default function App() {
               </div>
             </div>
 
-            {/* Empresa + Fit */}
-            <div className="g2">
-              <div className="card">
-                <div className="ct">Empresa</div>
-                {[["Faturamento",data.empresa?.faturamento],["Tamanho",data.empresa?.tamanho],["Estágio",data.empresa?.estagio],["Bolsa",data.empresa?.bolsa||"Não listada"]].map(([k,v])=>(
-                  <div key={k} className="row"><span style={{color:"#34d399",fontSize:10,flexShrink:0}}>→</span><span><b style={{color:"#f1f5f9"}}>{k}:</b> {v}</span></div>
+            {/* EMPRESA RESUMO */}
+            <div className="card" style={{marginBottom:16,borderColor:"rgba(52,211,153,.2)"}}>
+              <div className="ct">Visão Geral da Empresa</div>
+              <div style={{fontSize:13,lineHeight:1.75,color:"#e2e8f0",marginBottom:16}}>{safeData.empresa?.resumo}</div>
+              <div className="g2">
+                {[["Faturamento",safeData.empresa?.faturamento],["Porte",safeData.empresa?.tamanho],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa||"Não listada"]].map(([k,v])=>(
+                  <div key={k} style={{background:"rgba(20,28,46,.6)",borderRadius:10,padding:"10px 14px",border:"1px solid #232f47"}}>
+                    <div style={{fontSize:9,color:"#4a5878",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{k}</div>
+                    <div style={{fontSize:12.5,color:"#e2e8f0",fontWeight:600}}>{v}</div>
+                  </div>
                 ))}
-              </div>
-              <div className="card" style={{borderColor:ss?.border||"#2d3a52"}}>
-                <div className="ct">Fit Certta</div>
-                <div style={{fontSize:12.5,lineHeight:1.7,marginBottom:14,color:"#e2e8f0"}}>{data.fit?.justificativa}</div>
-                <div>{safeArr(data.fit?.solucoes_certta).map((s,i)=><span key={i} className="pill" style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399"}}>{s}</span>)}</div>
               </div>
             </div>
 
-            {/* Use cases */}
-            {safeArr(data.fit?.use_cases).length>0&&(
-              <div className="card">
-                <div className="ct">Use Cases</div>
-                {safeArr(data.fit?.use_cases).map((u,i)=><div key={i} className="row"><span style={{color:"#34d399",fontSize:10,flexShrink:0}}>→</span>{u}</div>)}
+            {/* FIT + USE CASES */}
+            <div className="g2" style={{marginBottom:0}}>
+              <div className="card" style={{borderColor:ss?.border+"55"}}>
+                <div className="ct">Fit Certta</div>
+                <div style={{fontSize:12.5,lineHeight:1.75,marginBottom:16,color:"#e2e8f0"}}>{safeData.fit?.justificativa}</div>
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:9,color:"#4a5878",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Aplicáveis</div>
+                  {safeArr(safeData.fit?.solucoes_certta).map((s,i)=>(
+                    <span key={i} className="pill" style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.28)",color:"#34d399"}}>{s}</span>
+                  ))}
+                </div>
               </div>
-            )}
+              <div className="card">
+                <div className="ct">Use Cases Prioritários</div>
+                {safeArr(safeData.fit?.use_cases).map((u,i)=>(
+                  <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
+                    <span style={{color:"#34d399",fontSize:12,flexShrink:0,marginTop:1}}>→</span>{u}
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* MEDDPICC */}
             <MEDDPICCCard data={data}/>
 
-            {/* Dores + Triggers */}
+            {/* COMPETIDORES */}
+            <CompetitorCard competidores={safeData.mercado?.competidores_provedor}/>
+
+            {/* DORES + TRIGGERS */}
             <div className="g2">
               <div className="card">
                 <div className="ct">Dores Mapeadas</div>
-                {safeArr(data.dores?.principais).map((d,i)=><div key={i} className="row"><span style={{color:"#34d399",fontSize:10,flexShrink:0}}>→</span>{d}</div>)}
-                {safeArr(data.dores?.exposicao_regulatoria).length>0&&(
-                  <div style={{marginTop:12}}>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#fbbf24",marginBottom:8}}>Regulatório</div>
-                    {safeArr(data.dores?.exposicao_regulatoria).map((r,i)=><span key={i} className="pill" style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",color:"#fbbf24"}}>{r}</span>)}
+                {safeArr(safeData.dores?.principais).map((d,i)=>(
+                  <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.05}s both`}}>
+                    <span style={{color:"#f87171",fontSize:12,flexShrink:0,marginTop:1}}>!</span>{d}
+                  </div>
+                ))}
+                {safeArr(safeData.dores?.exposicao_regulatoria).length>0&&(
+                  <div style={{marginTop:14}}>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#fbbf24",marginBottom:8}}>Exposição Regulatória</div>
+                    {safeArr(safeData.dores?.exposicao_regulatoria).map((r,i)=>(
+                      <span key={i} className="pill" style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.28)",color:"#fbbf24"}}>{r}</span>
+                    ))}
                   </div>
                 )}
+                <div style={{marginTop:14}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#7dd3fc",marginBottom:8}}>Sinais de Intenção</div>
+                  {safeArr(safeData.dores?.sinais_ativos).map((s,i)=>(
+                    <div key={i} style={{fontSize:11.5,color:"#7dd3fc",padding:"4px 0",lineHeight:1.5,display:"flex",gap:6,alignItems:"flex-start"}}>
+                      <span style={{flexShrink:0,marginTop:2}}>◎</span>{s}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <TriggerTimeline triggers={data.triggers}/>
+              <TriggerTimeline triggers={safeData.triggers}/>
             </div>
 
-            {/* Stakeholders */}
+            {/* STAKEHOLDERS */}
             <div className="card">
               <div className="ct">Organograma de Stakeholders</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))",gap:10}}>
-                {safeArr(data.stakeholders).map((s,i)=>{
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
+                {safeArr(safeData.stakeholders).map((s,i)=>{
                   const pk=prioKey(s.prioridade);
+                  const pc=prioColors[pk]||"#64748b";
+                  const urgColor = s.urgencia==="Alta"?"#f87171":s.urgencia==="Média"?"#fbbf24":"#64748b";
                   return (
-                    <div key={i} className="sk">
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                        <div style={{fontSize:12.5,fontWeight:700,color:"#f1f5f9",lineHeight:1.3}}>{s.cargo}</div>
-                        <span style={{background:(prioColors[pk]||"#64748b")+"22",border:`1px solid ${prioColors[pk]||"#64748b"}`,color:prioColors[pk]||"#64748b",borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:700,flexShrink:0,marginLeft:8,whiteSpace:"nowrap"}}>{s.prioridade}</span>
+                    <div key={i} className="sk" style={{animation:`fadeSlide .4s ease ${i*0.07}s both`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                        <div style={{fontSize:12.5,fontWeight:700,color:"#f1f5f9",lineHeight:1.3,flex:1}}>{s.cargo}</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",marginLeft:8,flexShrink:0}}>
+                          <span style={{background:pc+"20",border:`1px solid ${pc}`,color:pc,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:700,whiteSpace:"nowrap"}}>{s.prioridade}</span>
+                          <span style={{fontSize:9,color:urgColor,fontWeight:600}}>Urgência: {s.urgencia}</span>
+                        </div>
                       </div>
-                      {s.nome&&s.nome!=="X"&&s.nome!==""&&<div style={{fontSize:11,color:"#34d399",marginBottom:5}}>{s.nome}</div>}
-                      <div style={{fontSize:11.5,color:"#a3b1c9",lineHeight:1.55}}>{s.angulo}</div>
+                      {s.nome&&s.nome!==""&&<div style={{fontSize:11,color:"#34d399",marginBottom:6,fontStyle:"italic"}}>{s.nome}</div>}
+                      <div style={{fontSize:11.5,color:"#a3b1c9",lineHeight:1.6}}>{s.angulo}</div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* News */}
-            {safeArr(data.noticias).length>0&&(
+            {/* NOTICIAS */}
+            {safeArr(safeData.noticias).length>0&&(
               <div className="card">
                 <div className="ct">Notícias & Contexto de Mercado</div>
-                {safeArr(data.noticias).map((n,i)=>(
-                  <div key={i} className="news">
-                    {n.url?<a href={n.url} target="_blank" rel="noopener noreferrer" style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#7dd3fc",textDecoration:"none",display:"block"}}>{n.titulo} ↗</a>:<div style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#f1f5f9"}}>{n.titulo}</div>}
-                    <div style={{fontSize:12.5,color:"#a3b1c9",lineHeight:1.65,marginBottom:5}}>{n.resumo}</div>
+                {safeArr(safeData.noticias).map((n,i)=>(
+                  <div key={i} className="news" style={{animation:`fadeSlide .35s ease ${i*0.06}s both`}}>
+                    {n.url?<a href={n.url} target="_blank" rel="noopener noreferrer" style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#7dd3fc",textDecoration:"none",display:"block",lineHeight:1.4}}>{n.titulo} ↗</a>:<div style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#f1f5f9",lineHeight:1.4}}>{n.titulo}</div>}
+                    <div style={{fontSize:12.5,color:"#a3b1c9",lineHeight:1.65,marginBottom:6}}>{n.resumo}</div>
                     <div style={{fontSize:10,color:"#34d399",fontWeight:700}}>→ {n.relevancia}</div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Mensagens */}
+            {/* MENSAGENS */}
             <div className="card">
-              <button className="section-toggle" onClick={()=>toggle("msgs")}>
-                <div className="ct" style={{margin:0}}>Mensagens de Abertura</div>
-                <span style={{color:"#7d8ca8",fontSize:16}}>{expandedSection==="msgs"?"−":"+"}</span>
-              </button>
-              {(expandedSection==="msgs"||expandedSection===null)&&(
-                <div style={{marginTop:16}}>
-                  <div style={{marginBottom:18}}>
-                    <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>LinkedIn</div>
-                    <div className="msg">{data.estrategia?.mensagem_linkedin}</div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>
-                      E-mail · <span style={{color:"#f1f5f9",fontWeight:400,textTransform:"none",fontSize:11.5}}>{data.estrategia?.mensagem_email_assunto}</span>
-                    </div>
-                    <div className="msg">{data.estrategia?.mensagem_email_corpo}</div>
-                  </div>
+              <div className="ct">Mensagens de Abertura Personalizadas</div>
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{background:"rgba(52,211,153,.15)",border:"1px solid rgba(52,211,153,.3)",borderRadius:6,padding:"3px 10px"}}>LinkedIn</span>
                 </div>
-              )}
+                <div className="msg">{safeData.estrategia?.mensagem_linkedin}</div>
+              </div>
+              <div>
+                <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <span style={{background:"rgba(52,211,153,.15)",border:"1px solid rgba(52,211,153,.3)",borderRadius:6,padding:"3px 10px"}}>E-mail</span>
+                  <span style={{color:"#a3b1c9",fontWeight:400,textTransform:"none",fontSize:12,letterSpacing:0}}>{safeData.estrategia?.mensagem_email_assunto}</span>
+                </div>
+                <div className="msg">{safeData.estrategia?.mensagem_email_corpo}</div>
+              </div>
             </div>
 
-            {/* SPIN + Objeções */}
+            {/* SPIN + OBJEÇÕES */}
             <div className="g2">
               <div className="card">
-                <div className="ct">Perguntas SPIN</div>
-                {safeArr(data.estrategia?.perguntas_spin).map((q,i)=><div key={i} className="spinq">{q}</div>)}
+                <div className="ct">Perguntas SPIN — Discovery</div>
+                {safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=>(
+                  <div key={i} className="spinq" style={{animation:`fadeSlide .3s ease ${i*0.07}s both`}}>{q}</div>
+                ))}
               </div>
               <div className="card">
-                <div className="ct">Objeções & Respostas</div>
-                {safeArr(data.estrategia?.objecoes).map((o,i)=>(
-                  <div key={i} className="obj">
-                    <div style={{fontSize:12,color:"#fbbf24",fontWeight:700,marginBottom:6}}>"{o.objecao}"</div>
-                    <div style={{fontSize:12.5,color:"#e2e8f0",lineHeight:1.6}}>→ {o.resposta}</div>
+                <div className="ct">Objeções & Respostas Sugeridas</div>
+                {safeArr(safeData.estrategia?.objecoes).map((o,i)=>(
+                  <div key={i} className="obj" style={{animation:`fadeSlide .3s ease ${i*0.08}s both`}}>
+                    <div style={{fontSize:12,color:"#fbbf24",fontWeight:700,marginBottom:8,lineHeight:1.4}}>"{o.objecao}"</div>
+                    <div style={{fontSize:12.5,color:"#e2e8f0",lineHeight:1.65}}>→ {o.resposta}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Próximos Passos */}
+            {/* PRÓXIMOS PASSOS */}
             <div className="card">
-              <div className="ct">Próximos Passos</div>
+              <div className="ct">Plano de Ação</div>
               <div className="g2">
                 <div>
-                  <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>AE — Ações Imediatas</div>
-                  {safeArr(data.proximos_passos?.ae).map((a,i)=><div key={i} className="row"><span style={{color:"#34d399",fontSize:10,flexShrink:0}}>→</span>{a}</div>)}
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px rgba(52,211,153,.6)"}}/>
+                    <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase"}}>AE — Ações Imediatas</div>
+                  </div>
+                  {safeArr(safeData.proximos_passos?.ae).map((a,i)=>(
+                    <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
+                      <span style={{color:"#34d399",fontSize:11,flexShrink:0,marginTop:2}}>→</span>{a}
+                    </div>
+                  ))}
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#fbbf24",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>BDR — Ações</div>
-                  {safeArr(data.proximos_passos?.bdr).map((a,i)=><div key={i} className="row"><span style={{color:"#fbbf24",fontSize:10,flexShrink:0}}>→</span>{a}</div>)}
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:"#fbbf24",boxShadow:"0 0 8px rgba(251,191,36,.6)"}}/>
+                    <div style={{fontSize:9,color:"#fbbf24",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase"}}>BDR — Ações de Suporte</div>
+                  </div>
+                  {safeArr(safeData.proximos_passos?.bdr).map((a,i)=>(
+                    <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
+                      <span style={{color:"#fbbf24",fontSize:11,flexShrink:0,marginTop:2}}>→</span>{a}
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div style={{marginTop:16,padding:"12px 16px",background:"#141c2e",borderRadius:10,border:"1px solid #2d3a52",fontSize:12.5,color:"#e2e8f0",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:16}}>⏱</span>
-                <span><b style={{color:"#34d399"}}>Prazo sugerido:</b> {data.proximos_passos?.prazo}</span>
+              <div style={{marginTop:18,padding:"14px 18px",background:"linear-gradient(145deg,rgba(52,211,153,.08),rgba(52,211,153,.04))",borderRadius:12,border:"1px solid rgba(52,211,153,.2)",display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:18}}>⏱</span>
+                <div>
+                  <div style={{fontSize:10,color:"#34d399",fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Prazo Sugerido</div>
+                  <div style={{fontSize:13,color:"#e2e8f0",fontWeight:600}}>{safeData.proximos_passos?.prazo}</div>
+                </div>
               </div>
             </div>
 
           </div>
         )}
 
-        {/* Empty state */}
+        {/* EMPTY STATE */}
         {!data&&!loading&&(
-          <div style={{textAlign:"center",padding:"56px 0"}}>
-            <div style={{width:64,height:64,background:"linear-gradient(135deg,#1a2438,#141c2e)",border:"1px solid #2d3a52",borderRadius:20,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#2d3a52" strokeWidth="1.8"/><circle cx="12" cy="12" r="5" stroke="#3a4762" strokeWidth="1.8"/><circle cx="12" cy="12" r="2" fill="#3a4762"/><path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="#3a4762" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          <div style={{textAlign:"center",padding:"64px 0",animation:"fadeUp .5s ease"}}>
+            <div style={{width:72,height:72,background:"linear-gradient(145deg,#1a2438,#141c2e)",border:"1px solid #2d3a52",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#2d3a52" strokeWidth="1.8"/>
+                <circle cx="12" cy="12" r="5" stroke="#3a4762" strokeWidth="1.8"/>
+                <circle cx="12" cy="12" r="2" fill="#3a4762"/>
+                <path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="#3a4762" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
             </div>
-            <div style={{fontSize:14,color:"#a3b1c9",fontWeight:700}}>Pronto para mapear uma conta</div>
-            <div style={{fontSize:11.5,color:"#7d8ca8",marginTop:6}}>Digite o nome ou site de uma empresa · Ou envie um CSV para análise em lote</div>
+            <div style={{fontSize:15,color:"#a3b1c9",fontWeight:700,marginBottom:6}}>Pronto para mapear sua próxima conta</div>
+            <div style={{fontSize:12,color:"#4a5878",lineHeight:1.7}}>Digite o nome ou URL de uma empresa na aba Individual<br/>ou envie um CSV para análise em lote</div>
           </div>
         )}
 
