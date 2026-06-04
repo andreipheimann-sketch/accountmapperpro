@@ -1,20 +1,14 @@
 // Serverless function (Vercel) - calls Tavily from the server side.
-// This solves the CORS problem: the browser talks to YOUR domain,
-// and your server talks to Tavily. The API key stays secret on the server.
+// V2: accepts optional `context` (text extracted from uploaded RI/PDF)
+// and an optional `depth` flag for deeper searches.
 
 export default async function handler(req, res) {
-  // Allow the frontend to call this endpoint
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
@@ -22,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { company } = req.body || {};
+    const { company, context } = req.body || {};
     if (!company || !company.trim()) {
       return res.status(400).json({ error: "Nome da empresa nao informado." });
     }
@@ -64,7 +58,13 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({ results });
+    // If the user uploaded context (e.g. RI summary), pass it back so the
+    // frontend can fold it into the analysis as an extra "documento" source.
+    const uploadedContext = (typeof context === "string" && context.trim())
+      ? context.trim().slice(0, 4000)
+      : null;
+
+    return res.status(200).json({ results, uploadedContext });
   } catch (e) {
     return res.status(500).json({ error: "Erro interno: " + (e.message || String(e)) });
   }
