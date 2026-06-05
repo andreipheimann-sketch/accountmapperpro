@@ -307,21 +307,95 @@ function buildAccountData(company, searchResults) {
     mercado = "A digitalização acelerada no Brasil gerou mais de 150 milhões de usuários de serviços digitais. Com o aumento de 67% nos crimes cibernéticos em 2023, empresas com operação online enfrentam pressão crescente por controles robustos de identidade digital e prevenção a fraude.";
   }
 
-  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um dos verticais de maior aderência ao ICP da Certta no Brasil. O modelo de negócio exige operação digital de alto volume com exposição direta a fraudes de identidade — exatamente o perfil onde a Certta entrega maior retorno. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa, confirmando atividade digital relevante e presença no mercado.` : ""} Empresas desse segmento que adotam a plataforma Certta reduzem fraudes de identidade em até 80% e eliminam a análise manual no onboarding, com ROI comprovado no primeiro trimestre.`;
+  // Build personalized company summary from real Tavily data
+  const tavilyAnswers = [];
+  if (Array.isArray(searchResults)) {
+    for (const block of searchResults) {
+      if (block.answer && block.answer.trim().length > 20) {
+        tavilyAnswers.push(block.answer.trim());
+      }
+    }
+  }
 
-  const empresaResumo = `${company} é uma empresa brasileira do setor de ${setor.toLowerCase()}. ${mercado}`;
+  // Extract financial/size data from Tavily answers
+  const allAnswerText = tavilyAnswers.join(" ");
+  const extractValue = (patterns) => {
+    for (const pat of patterns) {
+      const m = allAnswerText.match(pat);
+      if (m) return m[0];
+    }
+    return null;
+  };
+
+  const faturamentoReal = extractValue([
+    /R\$[\s]*[\d,\.]+[\s]*(bilh[oõ]es?|milh[oõ]es?|trilh[oõ]es?)[^\.\,]*/i,
+    /faturamento[^\.]*?R\$[^\.\,]*/i,
+    /receita[^\.]*?R\$[^\.\,]*/i,
+  ]);
+  const funcionariosReal = extractValue([
+    /[\d\.]+[\s]*mil[\s]*funcion[aá]rios?/i,
+    /[\d\.]+[\s]*colaboradores?/i,
+    /[\d\.]+[\s]*empregados?/i,
+    /equipe de[\s]*[\d\.]+/i,
+  ]);
+  const bolsaReal = extractValue([
+    /listada?[^\.\,]*?(B3|Nasdaq|NYSE|Bovespa)/i,
+    /(B3|Nasdaq|NYSE)[^\.\,]*listada?/i,
+    /ticker[^\.\,]*/i,
+    /IPO[^\.\,]*/i,
+  ]);
+  const fundadoReal = extractValue([
+    /fundad[ao][^\.\,]*?em[\s]*\d{4}/i,
+    /criad[ao][^\.\,]*?em[\s]*\d{4}/i,
+    /\d{4}[^\.\,]*?(fundad|criad)/i,
+  ]);
+  const clientesReal = extractValue([
+    /[\d,\.]+[\s]*(milh[oõ]es?|mil)[\s]*(de[\s]*)?(clientes?|usu[aá]rios?|contas?)/i,
+    /(clientes?|usu[aá]rios?)[^\.\,]*?[\d,\.]+[\s]*(milh[oõ]es?|mil)/i,
+  ]);
+
+  // Build rich personalized summary from Tavily data
+  let empresaResumo;
+  if (tavilyAnswers.length > 0) {
+    // Use real data — pick most informative answer and complement
+    const mainAnswer = tavilyAnswers[0];
+    const extra = tavilyAnswers[1] ? " " + tavilyAnswers[1] : "";
+    empresaResumo = (mainAnswer + extra).slice(0, 600);
+    if (empresaResumo.length === 600) empresaResumo += "...";
+  } else {
+    // Fallback: build from known facts about the specific company
+    const knownFacts = {
+      btg: "BTG Pactual é o maior banco de investimentos da América Latina, com operações em renda fixa, renda variável, gestão de ativos, wealth management e banking. Fundado em 1983, é listado na B3 (BPAC11) e possui presença em mais de 10 países.",
+      inter: "Banco Inter é um banco digital brasileiro fundado em 1994, listado na B3 e Nasdaq (INTR). Com mais de 35 milhões de clientes, oferece conta digital, crédito, investimentos, seguros e marketplace em um único super app.",
+      nubank: "Nubank é a maior fintech da América Latina, com mais de 100 milhões de clientes em Brasil, México e Colômbia. Listada na NYSE (NU), é avaliada em mais de US$ 40 bilhões e oferece cartão de crédito, conta, empréstimos e investimentos.",
+      stone: "Stone é uma empresa de meios de pagamento brasileira listada na Nasdaq (STNE), com foco em soluções financeiras para pequenas e médias empresas. Atende mais de 3 milhões de clientes com maquininhas, conta digital e crédito.",
+      picpay: "PicPay é uma carteira digital brasileira com mais de 30 milhões de usuários ativos, oferecendo pagamentos, transferências, crédito e investimentos via app. Pertence ao grupo J&F.",
+      magalu: "Magazine Luiza (Magalu) é um dos maiores varejistas digitais do Brasil, listado na B3 (MGLU3), com operação omnichannel combinando lojas físicas, e-commerce e marketplace com mais de 200 mil sellers.",
+      xp: "XP Inc. é a maior plataforma de investimentos do Brasil, listada na Nasdaq (XP), com mais de 4,5 milhões de clientes ativos e R$ 1 trilhão em ativos sob custódia. Oferece corretagem, fundos, renda fixa e produtos de seguros.",
+      c6: "C6 Bank é um banco digital brasileiro com mais de 25 milhões de clientes, oferecendo conta corrente, cartão de crédito, investimentos e câmbio. Tem participação do JPMorgan Chase.",
+    };
+    const key = Object.keys(knownFacts).find(k => lower.includes(k));
+    if (key) {
+      empresaResumo = knownFacts[key];
+    } else {
+      empresaResumo = `${company} é uma empresa do setor de ${setor.toLowerCase()} com operação no Brasil. Com base no perfil do segmento, atua com alto volume de transações digitais e exposição a fraudes de identidade — características centrais do ICP da Certta.`;
+    }
+  }
+
+  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um dos verticais de maior aderência ao ICP da Certta no Brasil. O modelo de negócio exige operação digital de alto volume com exposição direta a fraudes de identidade — exatamente o perfil onde a Certta entrega maior retorno. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa.` : ""} Empresas desse segmento que adotam a Certta reduzem fraudes em até 80% e eliminam a análise manual no onboarding, com ROI comprovado no primeiro trimestre.`;
 
   return {
     empresa: {
       nome: company,
       setor,
       resumo: empresaResumo,
-      tamanho: tier==="Tier 1" ? "Enterprise (1.000+ funcionários)" : "Mid-Market / Enterprise",
+      tamanho: funcionariosReal || (tier==="Tier 1" ? "Grande porte (1.000+ funcionários)" : "Médio porte (100-1.000 funcionários)"),
       sede: "Brasil",
       operacao: "Nacional / LATAM",
-      faturamento: "Consultar RI ou relatório público",
-      estagio: tier==="Tier 1" ? "Consolidada / Scale-up" : "Em crescimento",
-      bolsa: isBank||isFintech ? "Verificar listagem B3 / Nasdaq" : "A confirmar"
+      faturamento: faturamentoReal || (tier==="Tier 1" ? "Grande porte — consultar último relatório de resultados" : "Médio porte — consultar CNPJ ou relatório setorial"),
+      clientes: clientesReal || null,
+      estagio: fundadoReal ? `Consolidada — ${fundadoReal}` : (tier==="Tier 1" ? "Consolidada / Scale-up" : "Em crescimento"),
+      bolsa: bolsaReal || (isBank||isFintech ? "Possível listagem B3 / Nasdaq — confirmar via RI" : "Capital fechado"),
     },
     fit: { score, justificativa: fitJustificativa, solucoes_certta: solucoes, use_cases: useCases },
     mercado: { contexto: mercado, competidores_provedor: competidores },
@@ -691,8 +765,51 @@ export default function App() {
   function injectContext(d, ctx, company) {
     if (!ctx || !d) return d;
     const analise = analyzeDocument(ctx, company, d.empresa?.setor || "");
+
+    // Extract empresa fields from document when present
+    const text = ctx;
+    const extractVal = (patterns) => {
+      for (const pat of patterns) {
+        const m = text.match(pat);
+        if (m) return m[0].trim();
+      }
+      return null;
+    };
+
+    const docFaturamento = extractVal([
+      /R\$[\s]*[\d,\.]+[\s]*(bilh[oõ]es?|milh[oõ]es?)[^\.\,\n]*/i,
+      /faturamento[^\n\.]*?R\$[^\.\,\n]*/i,
+      /receita[^\n\.]*?R\$[^\.\,\n]*/i,
+      /receita l[ií]quida[^\n\.]*[\d][^\.\,\n]*/i,
+    ]);
+    const docFuncionarios = extractVal([
+      /[\d\.,]+[\s]*mil[\s]*funcion[aá]rios?/i,
+      /[\d\.,]+[\s]*colaboradores?/i,
+      /[\d\.,]+[\s]*empregados?/i,
+    ]);
+    const docClientes = extractVal([
+      /[\d,\.]+[\s]*(milh[oõ]es?|mil)[\s]*(de[\s]*)?(clientes?|usu[aá]rios?|correntistas?)/i,
+    ]);
+    const docSede = extractVal([
+      /sede[^\n\.]*?(São Paulo|Rio de Janeiro|Belo Horizonte|Porto Alegre|Curitiba|Brasília|Recife|Salvador|Fortaleza)/i,
+    ]);
+    const docBolsa = extractVal([
+      /listada?[^\n\.]*?(B3|Nasdaq|NYSE|Bovespa|BPAC|ITUB|BBDC)[^\.\,\n]*/i,
+      /ticker[^\n\.]*?[A-Z]{4}[0-9]{1,2}/i,
+    ]);
+
+    const updatedEmpresa = {
+      ...d.empresa,
+      ...(docFaturamento && { faturamento: docFaturamento }),
+      ...(docFuncionarios && { tamanho: docFuncionarios }),
+      ...(docClientes && { clientes: docClientes }),
+      ...(docSede && { sede: docSede.replace(/sede[^\w]*/i, "").trim() }),
+      ...(docBolsa && { bolsa: docBolsa }),
+    };
+
     return {
       ...d,
+      empresa: updatedEmpresa,
       contexto_documento: analise,
       noticias: [
         { titulo: "Documento Anexado — Contexto Interno da Empresa", resumo: ctx.slice(0, 300) + (ctx.length > 300 ? "..." : ""), relevancia: "Fonte interna — use para personalizar toda a abordagem", url: "" },
@@ -1083,7 +1200,7 @@ export default function App() {
               <div className="ct">Visão Geral da Empresa</div>
               <div style={{fontSize:13,lineHeight:1.75,color:"#e2e8f0",marginBottom:16}}>{safeData.empresa?.resumo}</div>
               <div className="g2">
-                {[["Faturamento",safeData.empresa?.faturamento],["Porte",safeData.empresa?.tamanho],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa||"Não listada"]].map(([k,v])=>(
+                {[["Faturamento",safeData.empresa?.faturamento],["Porte",safeData.empresa?.tamanho],["Clientes",safeData.empresa?.clientes],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa]].filter(([,v])=>v).map(([k,v])=>(
                   <div key={k} style={{background:"rgba(20,28,46,.6)",borderRadius:10,padding:"10px 14px",border:"1px solid #232f47"}}>
                     <div style={{fontSize:9,color:"#4a5878",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{k}</div>
                     <div style={{fontSize:12.5,color:"#e2e8f0",fontWeight:600}}>{v}</div>
