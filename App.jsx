@@ -351,24 +351,69 @@ function buildAccountData(company, searchResults) {
     ],
     estrategia: {
       canal_entrada: "LinkedIn direto com o Gerente de Prevenção à Fraude + cold call de apoio do BDR",
-      mensagem_linkedin: `Olá, tudo bem?\n\nVi que a ${company} tem uma operação digital expressiva no setor de ${setor.toLowerCase()} — exatamente o perfil de empresa com quem tenho trabalhado.\n\nEmpresa similar à de vocês reduziu fraudes de identidade em 73% e eliminou a análise manual no onboarding em 3 semanas após integrar a Certta. O que mais surpreendeu foi o impacto na conversão: +18% de cadastros concluídos.\n\nFaz sentido um papo de 20 minutos para eu entender como está o processo de vocês hoje?\n\nAbraço,\nAndrei Heimann | Account Executive Enterprise · Certta`,
-      mensagem_email_assunto: `${company} + Certta — Redução de fraude no onboarding`,
-      mensagem_email_corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa com quem a Certta gera maior impacto — operação digital de alto volume no setor de ${setor.toLowerCase()}, com exposição real a fraudes de identidade.\n\nNos últimos 12 meses, ajudamos empresas similares a:\n\n• Reduzir fraudes de identidade em até 80%\n• Eliminar completamente a análise manual no onboarding\n• Aumentar a conversão no cadastro em 15-20%\n• Garantir compliance com ${safeArr(exposicao).slice(0,2).join(" e ")} sem fricção operacional\n\nO processo de integração da Certta leva em média 3 semanas e é conduzido pelo nosso time de CS — sem demandar esforço relevante da engenharia de vocês.\n\nConsigo te mostrar em 20 minutos como isso funcionaria na operação de vocês, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta\n(51) 99436-7667`,
+      emails: [
+        {
+          assunto: `${company} + Certta — Redução de fraude no onboarding`,
+          corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa com quem a Certta gera maior impacto — operação digital de alto volume no setor de ${setor.toLowerCase()}, com exposição real a fraudes de identidade.\n\nNos últimos 12 meses, ajudamos empresas similares a:\n\n• Reduzir fraudes de identidade em até 80%\n• Eliminar completamente a análise manual no onboarding\n• Aumentar a conversão no cadastro em 15-20%\n• Garantir compliance com ${safeArr(exposicao).slice(0,2).join(" e ")} sem fricção operacional\n\nO processo de integração da Certta leva em média 3 semanas e é conduzido pelo nosso time de CS — sem demandar esforço relevante da engenharia de vocês.\n\nConsigo te mostrar em 20 minutos como isso funcionaria na operação de vocês, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta\n(51) 99436-7667`
+        },
+        {
+          assunto: `Uma pergunta sobre o processo de onboarding da ${company}`,
+          corpo: `Olá,\n\nSei que sua caixa de entrada está cheia — então vou ser direto.\n\nEmpresas de ${setor.toLowerCase()} com quem trabalhamos perdiam em média R$ 1,2M/mês com fraudes de identidade não detectadas. Depois de integrar a Certta, esse número caiu 76% em 90 dias.\n\nA ${company} tem o mesmo perfil. Valeria 20 minutos para eu te mostrar os números?\n\nAbraço,\nAndrei Heimann | Certta`
+        },
+        {
+          assunto: `Case: como [empresa similar] resolveu fraude no onboarding`,
+          corpo: `Olá,\n\nRecentemente ajudamos uma empresa do setor de ${setor.toLowerCase()} — perfil muito similar ao da ${company} — a:\n\n→ Eliminar 100% da fila de análise manual em 21 dias\n→ Reduzir fraude de identidade em 73%\n→ Aumentar conversão no onboarding em 18%\n\nO projeto foi ao ar em 3 semanas, sem impactar o roadmap de produto.\n\nFaz sentido eu te contar como funcionou? 20 minutos essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta\n(51) 99436-7667`
+        }
+      ],
+      inmails: [
+        {
+          assunto: `${company} + Certta — vale 20 minutos?`,
+          corpo: `Olá, tudo bem?\n\nVi que a ${company} tem uma operação digital expressiva no setor de ${setor.toLowerCase()} — exatamente o perfil de empresa com quem tenho trabalhado.\n\nEmpresa similar à de vocês reduziu fraudes de identidade em 73% e eliminou a análise manual no onboarding em 3 semanas após integrar a Certta. O que mais surpreendeu foi o impacto na conversão: +18% de cadastros concluídos.\n\nFaz sentido um papo de 20 minutos para eu entender como está o processo de vocês hoje?\n\nAbraço,\nAndrei Heimann | AE Enterprise · Certta`
+        },
+        {
+          assunto: `Uma pergunta sobre fraude no onboarding`,
+          corpo: `Olá!\n\nVi o seu perfil e queria te fazer uma pergunta direta: qual é hoje o maior desafio de vocês na validação de identidade — é acurácia do liveness, custo operacional da análise manual, ou compliance regulatório?\n\nPergunto porque dependendo da resposta, posso te mostrar como empresas similares resolveram isso com a Certta em menos de 30 dias.\n\nVale um papo rápido?`
+        },
+        {
+          assunto: `Vi que a ${company} está crescendo — parabéns`,
+          corpo: `Olá,\n\nAcompanho o crescimento da ${company} no setor de ${setor.toLowerCase()} — impressionante o que vocês estão construindo.\n\nEmpresa que cresce rápido em ambiente digital normalmente enfrenta um problema específico: a fraude de identidade cresce junto — e o processo de onboarding que funciona para 100k usuários começa a travar nos 500k.\n\nValeria uma conversa de 15 minutos para eu te mostrar como outras empresas do setor anteciparam esse problema?\n\nAbraço,\nAndrei`
+        }
+      ],
+      whatsapps: [
+        `Oi [Nome], tudo bem? Sou o Andrei da Certta — trabalhamos com prevenção a fraude de identidade no onboarding para empresas de ${setor.toLowerCase()}. Vi que a ${company} tem uma operação relevante nesse sentido. Valeria um papo rápido de 15 minutos essa semana? Te mando um Loom explicando o contexto antes.`,
+        `Oi [Nome]! Andrei, da Certta. Direto ao ponto: empresa similar à ${company} reduziu 73% das fraudes no onboarding e zerou a análise manual em 3 semanas. Tenho um case rápido que vale você ver. Posso te mandar?`,
+        `Oi [Nome], Andrei da Certta. Você é a pessoa certa para falar sobre prevenção a fraude no onboarding da ${company}? Se sim, tenho algo relevante para te mostrar — 15 minutos essa semana. Se não for você, quem seria o contato certo?`
+      ],
+      cold_calls: [
+        `"Bom dia [Nome], aqui é o Andrei da Certta. Tenho 30 segundos? [pausa] Perfeito. Trabalho com prevenção a fraude de identidade no onboarding para empresas de ${setor.toLowerCase()} — e a ${company} tem exatamente o perfil de empresa com quem a gente gera mais resultado. Recentemente ajudamos [empresa similar] a reduzir 73% das fraudes e eliminar a fila manual em 3 semanas. Faz sentido eu te mostrar como funcionou? Quando você tem 20 minutos essa semana?"`,
+        `"[Nome], bom dia! Andrei da Certta. Vou ser direto — ligo porque a ${company} apareceu no nosso radar como uma empresa com operação digital relevante em ${setor.toLowerCase()}, e esse é exatamente o perfil onde a gente mais entrega resultado. Uma pergunta rápida: hoje vocês usam alguma solução de liveness ou validação biométrica no onboarding? [ouvir resposta] Interessante. E quando uma análise não é conclusiva, como vocês lidam com isso hoje?"`,
+        `"Oi [Nome], aqui é o Andrei da Certta. Tudo bem? Olha, sei que você recebe muita ligação — então vou ser rápido. Tenho um case de uma empresa do setor de ${setor.toLowerCase()} que é muito parecido com o cenário de vocês, e o resultado foi bastante expressivo. Vale 2 minutos agora ou prefere que eu ligue amanhã numa hora melhor?"`
+      ],
       perguntas_spin: [
-        "SITUAÇÃO: Como está estruturado hoje o processo de validação de identidade no onboarding de vocês — é manual, automatizado ou híbrido?",
+        "SITUAÇÃO: Como está estruturado hoje o processo de validação de identidade no onboarding — é manual, automatizado ou híbrido?",
         "SITUAÇÃO: Qual o volume mensal de novos cadastros e qual a taxa estimada de tentativas de fraude que vocês identificam?",
-        "PROBLEMA: Quando uma análise automática não é conclusiva, o que acontece? Vai para uma fila manual? Quantas pessoas lidam com isso?",
+        "SITUAÇÃO: Qual solução de liveness ou biometria vocês utilizam atualmente? Há quanto tempo está em produção?",
+        "SITUAÇÃO: Quantas pessoas do time atuam hoje na análise manual de identidade ou revisão de casos?",
+        "PROBLEMA: Quando uma análise automática não é conclusiva, o que acontece? Vai para fila manual? Qual o SLA dessa fila?",
         "PROBLEMA: Vocês já identificaram tentativas de fraude com deepfake, documentos sintéticos ou foto de foto no liveness atual?",
+        "PROBLEMA: Qual é a taxa de falsa rejeição do sistema atual — usuários legítimos sendo barrados? Como isso impacta o NPS e o abandono?",
+        "PROBLEMA: Existe algum tipo de fraude que o sistema atual não consegue detectar de forma consistente?",
         "IMPLICAÇÃO: Qual o impacto financeiro estimado das fraudes que passam despercebidas por mês — em perdas diretas e custo operacional?",
-        "IMPLICAÇÃO: O que acontece com a experiência do usuário legítimo quando o liveness rejeita erroneamente? Qual a taxa de falsa rejeição atual?",
-        "NECESSIDADE: Se vocês pudessem automatizar 90% das análises manuais e reduzir fraudes em 70%, qual seria o impacto para o negócio nos próximos 12 meses?"
+        "IMPLICAÇÃO: Como o board e o time de risco avaliam a exposição atual à fraude? Isso está no radar como prioridade estratégica?",
+        "IMPLICAÇÃO: Se uma fraude de grande escala acontecer e gerar impacto público ou regulatório, qual seria o custo reputacional e financeiro para a empresa?",
+        "NECESSIDADE: Se vocês pudessem automatizar 90% das análises manuais e reduzir fraudes em 70%, qual seria o impacto para o negócio nos próximos 12 meses?",
+        "NECESSIDADE: O que precisaria acontecer para esse tema subir de prioridade na agenda de vocês — ou já está prioritário?",
+        "NECESSIDADE: Se eu conseguisse te mostrar um ROI claro nos primeiros 90 dias, com integração sem impactar o roadmap, isso seria suficiente para avançarmos para uma POC?"
       ],
       objecoes: [
-        { objecao: "Já temos um provedor de liveness contratado", resposta: "Faz sentido. Quando vence o contrato atual? O que mais me interessa é entender se o provedor atual está dando conta do volume e da sofisticação das fraudes hoje — especialmente deepfake. Posso estruturar uma POC comparativa com dados reais de vocês, sem custo, para vocês terem um benchmark concreto antes da próxima renovação." },
-        { objecao: "Não temos budget aprovado para isso agora", resposta: "Entendo perfeitamente. Antes de fecharmos esse assunto, me ajuda a entender: qual é o custo estimado das fraudes não detectadas por mês, somado ao custo da equipe de análise manual? Na maioria dos cases que fechamos, o ROI da Certta cobre o investimento já no primeiro trimestre — o que torna a conversa com o CFO mais simples." },
-        { objecao: "Nossa TI não tem capacidade de integração agora", resposta: "Esse é um ponto que aparece bastante. A integração da Certta via API leva em média 3 semanas e é conduzida inteiramente pelo nosso time de CS — o esforço do time de vocês é mínimo. Clients como [referência do setor] foram ao ar sem impactar o roadmap de produto. Podemos começar com um piloto em ambiente de staging para vocês validarem isso sem comprometer nada." },
-        { objecao: "Precisamos avaliar outras soluções antes", resposta: "Faz todo sentido. Quais são os critérios principais que vocês estão avaliando? Pergunto porque dependendo do que for prioritário — acurácia contra deepfake, velocidade de integração, compliance regulatório, ou custo por transação — posso já trazer um comparativo direto no próximo papo." },
-        { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Entendo. Só quero garantir que vocês tenham a informação quando precisar. Me conta: o volume de fraudes está estável ou vocês estão vendo crescimento? Se estiver crescendo, normalmente esse tema sobe de prioridade mais rápido do que os gestores antecipam — e vale a pena já ter avaliado uma solução antes da urgência chegar." }
+        { objecao: "Já temos um provedor de liveness contratado", resposta: "Faz sentido. Quando vence o contrato atual? O que mais me interessa é entender se o provedor está dando conta do volume e da sofisticação das fraudes hoje — especialmente deepfake. Posso estruturar uma POC comparativa com dados reais de vocês, sem custo, para terem um benchmark concreto antes da próxima renovação." },
+        { objecao: "Não temos budget aprovado para isso agora", resposta: "Entendo. Antes de fecharmos esse assunto: qual é o custo estimado das fraudes não detectadas por mês, somado ao custo da equipe de análise manual? Na maioria dos cases que fechamos, o ROI da Certta cobre o investimento no primeiro trimestre — o que torna a conversa com o CFO mais simples de conduzir." },
+        { objecao: "Nossa TI não tem capacidade de integração agora", resposta: "Esse ponto aparece bastante. A integração da Certta via API leva em média 3 semanas e é conduzida inteiramente pelo nosso time de CS — o esforço da engenharia de vocês é mínimo. Posso começar com um piloto em ambiente de staging para validarem isso sem comprometer o roadmap." },
+        { objecao: "Precisamos avaliar outras soluções antes", resposta: "Faz todo sentido. Quais são os critérios principais que vocês estão avaliando? Dependendo do que for prioritário — acurácia contra deepfake, velocidade de integração, compliance regulatório ou custo por transação — posso já trazer um comparativo direto no próximo papo." },
+        { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Entendo. Me conta: o volume de fraudes está estável ou vocês estão vendo crescimento? Se estiver crescendo, normalmente esse tema sobe de prioridade mais rápido do que os gestores antecipam — e vale a pena já ter avaliado uma solução antes da urgência chegar." },
+        { objecao: "Já tentamos soluções similares e não funcionou", resposta: "Que experiência foi essa? O que não funcionou — foi acurácia, integração técnica ou adoção interna? Pergunto porque dependendo do motivo, posso te mostrar exatamente como a Certta resolve esse ponto específico, com cases de empresas que vieram de situação similar." },
+        { objecao: "Precisamos envolver o jurídico e compliance antes", resposta: "Perfeito — é exatamente o caminho certo. A Certta tem documentação completa de compliance, certificações ISO 27001, e mapeamento regulatório específico para o seu setor. Posso preparar um material técnico-jurídico para facilitar essa avaliação interna. Quem seria a pessoa ideal para incluir nessa conversa?" },
+        { objecao: "Nosso produto vai mudar em breve e não é hora de integrar", resposta: "Faz sentido querer estabilidade antes de adicionar uma camada nova. Me ajuda a entender: a mudança impacta o fluxo de onboarding? Às vezes é exatamente durante uma redesign que faz mais sentido incluir uma solução nova — evita retrabalho depois. Vale ao menos mapear isso juntos?" }
       ],
       tier
     },
@@ -513,6 +558,8 @@ export default function App() {
   const [batchProg, setBatchProg]       = useState({done:0,total:0});
   const [mode, setMode]                 = useState("single");
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const [enriched, setEnriched]         = useState(null); // stakeholder enrichment results
+  const [enriching, setEnriching]       = useState(false);
   const reportRef  = useRef(null);
   const csvRef     = useRef(null);
   const ctxRef     = useRef(null);
@@ -527,28 +574,155 @@ export default function App() {
     return await res.json();
   }
 
-  function injectContext(d, ctx) {
-    if (!ctx||!d) return d;
-    return {...d, noticias:[{titulo:"Documento enviado pelo usuário (RI / Relatório)",resumo:ctx.slice(0,300)+(ctx.length>300?"...":""),relevancia:"Contexto interno — use para personalizar a abordagem e identificar iniciativas estratégicas",url:""},...(d.noticias||[])]};
+  // Extract domain from company input (URL or name)
+  function extractDomain(input) {
+    if (isUrl(input)) {
+      try {
+        const url = input.startsWith("http") ? input : "https://"+input;
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch { return ""; }
+    }
+    return ""; // name-only: Apollo will use company name
+  }
+
+  async function fetchStakeholders(company, domain) {
+    setEnriching(true);
+    try {
+      const res = await fetch("/api/stakeholders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company, domain }),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const json = await res.json();
+      setEnriched(json);
+    } catch (e) {
+      setEnriched({ error: e.message, contacts: [], sources: [] });
+    } finally {
+      setEnriching(false);
+    }
+  }
+
+  function analyzeDocument(ctx, company, setor) {
+    if (!ctx || ctx.length < 50) return null;
+    const text = ctx.toLowerCase();
+
+    // Extract strategic signals from document
+    const signals = [];
+    const oportunidades = [];
+    const riscos = [];
+    const destaques = [];
+    const triggersDocs = [];
+
+    // Financial signals
+    if (/faturamento|receita|crescimento|ebitda|lucro|resultado/.test(text)) {
+      destaques.push("Dados financeiros identificados no documento — utilize para dimensionar o porte e a saúde do negócio");
+      if (/crescimento|expan|aumento/.test(text)) {
+        oportunidades.push("Empresa em fase de crescimento documentada — momento ideal para introduzir soluções escaláveis de identidade digital");
+        triggersDocs.push("Crescimento financeiro documentado — urgência natural para escalar controles de onboarding");
+      }
+    }
+
+    // Digital transformation signals
+    if (/digital|tecnologia|plataforma|app|aplicativo|onboarding/.test(text)) {
+      destaques.push("Iniciativas de transformação digital mencionadas — abre caminho para posicionamento da Certta como parceira estratégica");
+      oportunidades.push("Agenda digital ativa indica abertura para novas soluções de identidade e autenticação");
+    }
+
+    // Fraud / risk signals
+    if (/fraude|risco|prevenção|compliance|regulat|bacen|lgpd|kyc|kyb|pld/.test(text)) {
+      destaques.push("Menções a fraude, risco ou compliance identificadas — use como ponto de entrada direto na abordagem");
+      triggersDocs.push("Preocupação com fraude e compliance documentada — dor validada, receptividade alta");
+      oportunidades.push("Awareness sobre risco regulatório e fraude já presente — encurta o ciclo de conscientização na discovery");
+    }
+
+    // Expansion signals
+    if (/expansão|expan|novo mercado|internacionaliz|latam|abertura/.test(text)) {
+      triggersDocs.push("Planos de expansão identificados — novas geografias exigem KYC/KYB adaptado a cada mercado");
+      oportunidades.push("Expansão geográfica ou de produto cria demanda natural por soluções de identidade em novos contextos");
+    }
+
+    // Investment / M&A signals
+    if (/investimento|rodada|aquisição|fusão|parceria estratégica|captação/.test(text)) {
+      triggersDocs.push("Movimentos de M&A ou captação identificados — momento de maior rigor em due diligence e KYB");
+      oportunidades.push("Transações corporativas exigem validação robusta de identidade de sócios e parceiros — use cases de KYB da Certta se aplicam diretamente");
+    }
+
+    // People / org signals
+    if (/contrat|headcount|equipe|time|funcionári|colaborador/.test(text)) {
+      destaques.push("Dados sobre estrutura de equipe identificados — ajuda a dimensionar quem toma decisões e quem sente a dor operacional");
+    }
+
+    // Product launch signals
+    if (/lançamento|novo produto|produto digital|serviço digital/.test(text)) {
+      triggersDocs.push("Lançamento de novo produto ou serviço digital identificado — janela ideal para integrar identidade digital desde o início");
+      oportunidades.push("Novos produtos digitais precisam de onboarding seguro desde o MVP — posicionar Certta antes do lançamento é o momento mais estratégico");
+    }
+
+    // Risk / concern section
+    if (/desafio|dificuldade|problema|gap|lacuna|melhoria/.test(text)) {
+      riscos.push("Desafios internos mencionados no documento — mapeie quais deles têm relação com identidade, fraude ou escalabilidade do onboarding");
+    }
+
+    // Default signals if document is rich but no specific patterns
+    if (!destaques.length) {
+      destaques.push("Documento anexado contém informações relevantes sobre a empresa — revise para identificar iniciativas estratégicas, métricas e prioridades do negócio");
+    }
+    if (!oportunidades.length) {
+      oportunidades.push("Utilize o documento como base para personalizar a abordagem com dados internos da empresa — aumenta significativamente a taxa de resposta");
+    }
+    if (!triggersDocs.length) {
+      triggersDocs.push("Revise o documento em busca de menções a crescimento, novos produtos, compliance ou expansão — esses são os principais gatilhos para a abordagem Certta");
+    }
+
+    return {
+      fonte: "Documento anexado pelo usuário",
+      tipo: ctx.length > 2000 ? "Documento extenso (RI / Relatório completo)" : "Documento de referência",
+      tamanho_chars: ctx.length,
+      destaques,
+      oportunidades_comerciais: oportunidades,
+      riscos_e_atencoes: riscos.length ? riscos : ["Nenhum risco crítico identificado automaticamente — revise o documento para alertas regulatórios ou financeiros"],
+      triggers_identificados: triggersDocs,
+      trecho_referencia: ctx.slice(0, 400) + (ctx.length > 400 ? "..." : ""),
+      recomendacao: `Use os dados do documento como âncora na abordagem com a ${company}. Referenciar informações internas da empresa demonstra preparação e aumenta drasticamente a credibilidade e a taxa de resposta.`
+    };
+  }
+
+  function injectContext(d, ctx, company) {
+    if (!ctx || !d) return d;
+    const analise = analyzeDocument(ctx, company, d.empresa?.setor || "");
+    return {
+      ...d,
+      contexto_documento: analise,
+      noticias: [
+        { titulo: "Documento Anexado — Contexto Interno da Empresa", resumo: ctx.slice(0, 300) + (ctx.length > 300 ? "..." : ""), relevancia: "Fonte interna — use para personalizar toda a abordagem", url: "" },
+        ...(d.noticias || [])
+      ]
+    };
   }
 
   async function analyze() {
     if (!input.trim()||loading) return;
-    setLoading(true); setError(""); setData(null);
+    setLoading(true); setError(""); setData(null); setEnriched(null);
+    const company = input.trim();
+    const domain = extractDomain(company);
     try {
       setStep("Pesquisando informações atualizadas...");
       try {
-        const resp = await searchTavily(input.trim(), contextText);
-        setStep("Construindo raio-x com dados reais...");
-        let d = buildAccountData(input.trim(), resp.results);
-        d = injectContext(d, contextText);
+        const resp = await searchTavily(company, contextText);
+        setStep("Construindo account mapping com dados reais...");
+        let d = buildAccountData(company, resp.results);
+        d = injectContext(d, contextText, company);
         setData(d); setLiveMode(true);
       } catch(e) {
         setError("Busca online indisponível ("+e.message+"). Usando base de conhecimento.");
-        let d = buildAccountData(input.trim(), null);
-        d = injectContext(d, contextText);
+        let d = buildAccountData(company, null);
+        d = injectContext(d, contextText, company);
         setData(d); setLiveMode(false);
       }
+      // Trigger stakeholder enrichment in background (non-blocking)
+      setStep("Enriquecendo organograma de stakeholders...");
+      fetchStakeholders(company, domain);
     } catch(e) { setError("Erro: "+(e?.message||String(e))); }
     finally { setLoading(false); setStep(""); }
   }
@@ -750,7 +924,7 @@ export default function App() {
         {mode==="batch"&&(
           <div style={{marginBottom:36,animation:"fadeUp .4s ease"}}>
             <div style={{fontSize:24,fontWeight:800,color:"#f8fafc",marginBottom:5,letterSpacing:"-0.5px"}}>Análise em Lote</div>
-            <div style={{fontSize:12.5,color:"#7d8ca8",marginBottom:24}}>Envie um CSV para gerar raio-x individual e painel consolidado. Máximo {BATCH_LIMIT} empresas por rodada.</div>
+            <div style={{fontSize:12.5,color:"#7d8ca8",marginBottom:24}}>Envie um CSV para gerar account mapping individual e painel consolidado. Máximo {BATCH_LIMIT} empresas por rodada.</div>
 
             <div style={{background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.18)",borderRadius:14,padding:"14px 18px",marginBottom:20}}>
               <div style={{fontSize:10,fontWeight:700,color:"#34d399",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Formato esperado do CSV</div>
@@ -823,7 +997,7 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>Contas analisadas — clique para abrir o raio-x completo</div>
+              <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>Contas analisadas — clique para abrir o account mapping completo</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
                 {batchResults.map((b,i)=>{
                   const bsk=scoreKey(b.data?.fit?.score);
@@ -871,8 +1045,10 @@ export default function App() {
               <h2>Concorrentes Prováveis</h2><ul>{safeArr(safeData.mercado?.competidores_provedor).map((c,i)=><li key={i}>{c}</li>)}</ul>
               <h2>Stakeholders</h2>{safeArr(safeData.stakeholders).map((s,i)=><div key={i} className="sk"><b>{s.cargo}</b> [{s.prioridade}] — Urgência: {s.urgencia}<p style={{marginTop:5,color:"#475569"}}>{s.angulo}</p></div>)}
               <h2>Notícias e Contexto</h2>{safeArr(safeData.noticias).map((n,i)=><div key={i} className="card" style={{marginBottom:8}}><b>{n.titulo}</b><p style={{marginTop:4,color:"#475569"}}>{n.resumo}</p><p style={{marginTop:4,fontSize:10,color:"#22c55e"}}>{n.relevancia}</p></div>)}
-              <h2>Mensagem LinkedIn</h2><div className="msg">{safeData.estrategia?.mensagem_linkedin}</div>
-              <h2>E-mail — {safeData.estrategia?.mensagem_email_assunto}</h2><div className="msg">{safeData.estrategia?.mensagem_email_corpo}</div>
+              <h2>E-mail — Variante 1</h2><div className="msg">{safeArr(safeData.estrategia?.emails)[0]?.corpo}</div>
+              <h2>InMail LinkedIn — Variante 1</h2><div className="msg">{safeArr(safeData.estrategia?.inmails)[0]?.corpo}</div>
+              <h2>WhatsApp — Variante 1</h2><div className="msg">{safeArr(safeData.estrategia?.whatsapps)[0]}</div>
+              <h2>Cold Call — Abertura 1</h2><div className="msg">{safeArr(safeData.estrategia?.cold_calls)[0]}</div>
               <h2>Perguntas SPIN</h2><ul>{safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=><li key={i}>{q}</li>)}</ul>
               <h2>Objeções</h2>{safeArr(safeData.estrategia?.objecoes).map((o,i)=><div key={i} className="sk"><b>"{o.objecao}"</b><p style={{marginTop:4}}>→ {o.resposta}</p></div>)}
               <div className="g2" style={{marginTop:16}}>
@@ -973,24 +1149,113 @@ export default function App() {
               <TriggerTimeline triggers={safeData.triggers}/>
             </div>
 
-            {/* STAKEHOLDERS */}
+            {/* ORGANOGRAMA DE STAKEHOLDERS — 3 CAMADAS */}
             <div className="card">
-              <div className="ct">Organograma de Stakeholders</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:10}}>
+                <div className="ct" style={{marginBottom:0}}>Organograma de Stakeholders</div>
+                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                  {safeArr(enriched?.sources).map((src,i)=>(
+                    <span key={i} className="pill" style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.25)",color:"#34d399",fontSize:9}}>{src}</span>
+                  ))}
+                  {enriching&&<div style={{display:"flex",alignItems:"center",gap:6}}><div className="dot" style={{width:6,height:6}}/><span style={{fontSize:9,color:"#a3b1c9"}}>Enriquecendo...</span></div>}
+                  {!enriched&&!enriching&&data&&(
+                    <button className="btn3" style={{fontSize:10,padding:"5px 12px"}} onClick={()=>fetchStakeholders(input.trim(),extractDomain(input.trim()))}>
+                      Buscar contatos reais
+                    </button>
+                  )}
+                </div>
+              </div>
+              {enriched&&safeArr(enriched.contacts).length>0&&(
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#34d399",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:"#34d399",display:"inline-block",boxShadow:"0 0 8px rgba(52,211,153,.6)"}}/>
+                    Contatos Reais — {enriched.total} encontrado{enriched.total!==1?"s":""}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:10,marginBottom:12}}>
+                    {safeArr(enriched.contacts).map((contact,i)=>(
+                      <div key={i} style={{background:"linear-gradient(145deg,#0f1e30,#0a1628)",border:"1px solid rgba(52,211,153,.2)",borderRadius:14,padding:"14px 16px",transition:"all .25s"}}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(52,211,153,.5)"}
+                        onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(52,211,153,.2)"}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",lineHeight:1.3}}>{contact.nome}</div>
+                            <div style={{fontSize:11,color:"#34d399",marginTop:3}}>{contact.cargo}</div>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",marginLeft:8,flexShrink:0}}>
+                            <span style={{background:"rgba(52,211,153,.12)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399",borderRadius:6,padding:"2px 8px",fontSize:8,fontWeight:700}}>{(contact.source||"").split(" ")[0]}</span>
+                            {contact.is_senior&&<span style={{fontSize:8,color:"#fbbf24",fontWeight:700}}>DECISOR</span>}
+                          </div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                          {contact.email&&(
+                            <a href={"mailto:"+contact.email} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#7dd3fc",textDecoration:"none",background:"rgba(125,211,252,.06)",borderRadius:6,padding:"4px 8px"}}>
+                              <span>✉</span>
+                              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{contact.email}</span>
+                              {contact.email_confidence>0&&<span style={{fontSize:8,color:"#4a5878",marginLeft:"auto",flexShrink:0}}>{contact.email_confidence}%</span>}
+                            </a>
+                          )}
+                          {contact.phone&&(
+                            <a href={"tel:"+contact.phone} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#a3b1c9",textDecoration:"none",background:"rgba(255,255,255,.03)",borderRadius:6,padding:"4px 8px"}}>
+                              <span>tel</span>{contact.phone}
+                            </a>
+                          )}
+                          {contact.linkedin&&(
+                            <a href={contact.linkedin.startsWith("http")?contact.linkedin:"https://linkedin.com/in/"+contact.linkedin} target="_blank" rel="noopener noreferrer"
+                              style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#60a5fa",textDecoration:"none",background:"rgba(96,165,250,.06)",borderRadius:6,padding:"4px 8px"}}>
+                              <span>in</span><span>Ver perfil LinkedIn</span>
+                            </a>
+                          )}
+                          {contact.department&&<div style={{fontSize:10,color:"#4a5878",padding:"2px 0"}}>Depto: {contact.department}{contact.cidade?" · "+contact.cidade:""}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {enriched.tavily_context&&(
+                    <div style={{background:"rgba(125,211,252,.05)",border:"1px solid rgba(125,211,252,.15)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
+                      <div style={{fontSize:8,fontWeight:700,color:"#7dd3fc",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Contexto de Liderança</div>
+                      <div style={{fontSize:11.5,color:"#a3b1c9",lineHeight:1.6}}>{enriched.tavily_context}</div>
+                    </div>
+                  )}
+                  {safeArr(enriched.errors).length>0&&(
+                    <div style={{fontSize:10,color:"#4a5878",padding:"6px 10px",background:"rgba(255,255,255,.02)",borderRadius:8,border:"1px solid #2d3a52"}}>
+                      {safeArr(enriched.errors).map((e,i)=><div key={i}>⚠ {e}</div>)}
+                    </div>
+                  )}
+                </div>
+              )}
+              {enriched&&safeArr(enriched.contacts).length===0&&(
+                <div style={{background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.15)",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:12,color:"#a3b1c9",lineHeight:1.6}}>
+                  <span style={{color:"#fbbf24",fontWeight:700}}>Nenhum contato encontrado via API.</span>
+                  <div style={{fontSize:10.5,color:"#4a5878",marginTop:6}}>Configure HUNTER_API_KEY e APOLLO_API_KEY na Vercel para ativar o organograma real.</div>
+                </div>
+              )}
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:enriched&&safeArr(enriched.contacts).length>0?"#4a5878":"#34d399",marginBottom:12}}>
+                {enriched&&safeArr(enriched.contacts).length>0?"Mapeamento Estratégico de Cargos-Alvo":"Perfis de Entrada Recomendados"}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
                 {safeArr(safeData.stakeholders).map((s,i)=>{
                   const pk=prioKey(s.prioridade);
                   const pc=prioColors[pk]||"#64748b";
-                  const urgColor = s.urgencia==="Alta"?"#f87171":s.urgencia==="Média"?"#fbbf24":"#64748b";
+                  const urgColor=s.urgencia==="Alta"?"#f87171":s.urgencia==="Média"?"#fbbf24":"#64748b";
+                  const matched=safeArr(enriched?.contacts).find(c=>
+                    s.cargo.split("/")[0].trim().toLowerCase().split(" ").some(w=>w.length>3&&c.cargo?.toLowerCase().includes(w))
+                  );
                   return (
-                    <div key={i} className="sk" style={{animation:`fadeSlide .4s ease ${i*0.07}s both`}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                    <div key={i} className="sk" style={matched?{borderColor:"rgba(52,211,153,.35)"}:{}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                         <div style={{fontSize:12.5,fontWeight:700,color:"#f1f5f9",lineHeight:1.3,flex:1}}>{s.cargo}</div>
                         <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",marginLeft:8,flexShrink:0}}>
-                          <span style={{background:pc+"20",border:`1px solid ${pc}`,color:pc,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:700,whiteSpace:"nowrap"}}>{s.prioridade}</span>
+                          <span style={{background:pc+"20",border:"1px solid "+pc,color:pc,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:700,whiteSpace:"nowrap"}}>{s.prioridade}</span>
                           <span style={{fontSize:9,color:urgColor,fontWeight:600}}>Urgência: {s.urgencia}</span>
                         </div>
                       </div>
-                      {s.nome&&s.nome!==""&&<div style={{fontSize:11,color:"#34d399",marginBottom:6,fontStyle:"italic"}}>{s.nome}</div>}
+                      {matched&&(
+                        <div style={{background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.2)",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11}}>
+                          <div style={{color:"#34d399",fontWeight:700,marginBottom:2}}>Match: {matched.nome}</div>
+                          {matched.email&&<div style={{color:"#7dd3fc",fontSize:10}}>{matched.email}</div>}
+                          {matched.linkedin&&<a href={matched.linkedin} target="_blank" rel="noopener noreferrer" style={{color:"#60a5fa",fontSize:10,textDecoration:"none",display:"block"}}>Ver LinkedIn</a>}
+                        </div>
+                      )}
                       <div style={{fontSize:11.5,color:"#a3b1c9",lineHeight:1.6}}>{s.angulo}</div>
                     </div>
                   );
@@ -1012,38 +1277,127 @@ export default function App() {
               </div>
             )}
 
-            {/* MENSAGENS */}
-            <div className="card">
-              <div className="ct">Mensagens de Abertura Personalizadas</div>
-              <div style={{marginBottom:20}}>
-                <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{background:"rgba(52,211,153,.15)",border:"1px solid rgba(52,211,153,.3)",borderRadius:6,padding:"3px 10px"}}>LinkedIn</span>
+            {/* CONTEÚDO ADICIONAL ANEXADO */}
+            {safeData.contexto_documento && (
+              <div className="card" style={{border:"1px solid rgba(125,211,252,.3)",background:"linear-gradient(145deg,#0f1e30,#0a1828)"}}>
+                <div className="ct" style={{color:"#7dd3fc"}}>📎 Análise Estratégica — Documento Anexado</div>
+                <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+                  <span className="pill" style={{background:"rgba(125,211,252,.1)",border:"1px solid rgba(125,211,252,.3)",color:"#7dd3fc"}}>{safeData.contexto_documento.tipo}</span>
+                  <span className="pill" style={{background:"rgba(125,211,252,.08)",border:"1px solid rgba(125,211,252,.2)",color:"#94a3b8"}}>{safeData.contexto_documento.tamanho_chars.toLocaleString()} caracteres processados</span>
                 </div>
-                <div className="msg">{safeData.estrategia?.mensagem_linkedin}</div>
+
+                <div className="g2" style={{marginBottom:16}}>
+                  <div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#34d399",textTransform:"uppercase",marginBottom:10}}>Destaques Identificados</div>
+                    {safeArr(safeData.contexto_documento.destaques).map((d,i)=>(
+                      <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#e2e8f0",lineHeight:1.5}}>
+                        <span style={{color:"#34d399",flexShrink:0}}>✓</span>{d}
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#fbbf24",textTransform:"uppercase",marginBottom:10}}>Gatilhos Identificados no Doc.</div>
+                    {safeArr(safeData.contexto_documento.triggers_identificados).map((t,i)=>(
+                      <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#e2e8f0",lineHeight:1.5}}>
+                        <span style={{color:"#fbbf24",flexShrink:0}}>⚡</span>{t}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#34d399",textTransform:"uppercase",marginBottom:10}}>Oportunidades Comerciais Identificadas</div>
+                  {safeArr(safeData.contexto_documento.oportunidades_comerciais).map((o,i)=>(
+                    <div key={i} style={{display:"flex",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12.5,color:"#e2e8f0",lineHeight:1.6}}>
+                      <span style={{color:"#34d399",flexShrink:0,fontSize:14}}>→</span>{o}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#f87171",textTransform:"uppercase",marginBottom:10}}>Pontos de Atenção</div>
+                  {safeArr(safeData.contexto_documento.riscos_e_atencoes).map((r,i)=>(
+                    <div key={i} style={{display:"flex",gap:8,padding:"6px 0",fontSize:12,color:"#fca5a5",lineHeight:1.5}}>
+                      <span style={{flexShrink:0}}>!</span>{r}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{background:"rgba(125,211,252,.06)",border:"1px solid rgba(125,211,252,.2)",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#7dd3fc",textTransform:"uppercase",marginBottom:8}}>Recomendação Estratégica</div>
+                  <div style={{fontSize:12.5,color:"#e2e8f0",lineHeight:1.7}}>{safeData.contexto_documento.recomendacao}</div>
+                </div>
+
+                {safeData.contexto_documento.trecho_referencia && (
+                  <div style={{marginTop:14}}>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#4a5878",textTransform:"uppercase",marginBottom:8}}>Trecho de Referência (início do documento)</div>
+                    <div style={{background:"rgba(0,0,0,.3)",borderRadius:10,padding:"12px 14px",fontSize:11,color:"#64748b",lineHeight:1.7,fontFamily:"monospace",whiteSpace:"pre-wrap"}}>{safeData.contexto_documento.trecho_referencia}</div>
+                  </div>
+                )}
               </div>
-              <div>
-                <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  <span style={{background:"rgba(52,211,153,.15)",border:"1px solid rgba(52,211,153,.3)",borderRadius:6,padding:"3px 10px"}}>E-mail</span>
-                  <span style={{color:"#a3b1c9",fontWeight:400,textTransform:"none",fontSize:12,letterSpacing:0}}>{safeData.estrategia?.mensagem_email_assunto}</span>
+            )}
+
+            {/* MENSAGENS — 4 CANAIS × 3 VARIANTES */}
+            {["emails","inmails","whatsapps","cold_calls"].map((canal,ci)=>{
+              const configs = {
+                emails:    { label:"E-mail", icon:"✉️", color:"#7dd3fc", bg:"rgba(125,211,252,.1)", border:"rgba(125,211,252,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
+                inmails:   { label:"InMail — LinkedIn", icon:"💼", color:"#34d399", bg:"rgba(52,211,153,.1)", border:"rgba(52,211,153,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
+                whatsapps: { label:"WhatsApp", icon:"💬", color:"#4ade80", bg:"rgba(74,222,128,.1)", border:"rgba(74,222,128,.3)", isObj:false },
+                cold_calls:{ label:"Cold Call — Abertura", icon:"📞", color:"#fbbf24", bg:"rgba(251,191,36,.1)", border:"rgba(251,191,36,.3)", isObj:false }
+              };
+              const cfg = configs[canal];
+              const items = safeArr(safeData.estrategia?.[canal]);
+              if (!items.length) return null;
+              return (
+                <div key={canal} className="card" style={{marginBottom:16}}>
+                  <div className="ct" style={{color:cfg.color}}>
+                    {cfg.icon} {cfg.label}
+                    <span style={{fontSize:9,color:"#4a5878",marginLeft:8,fontWeight:400,letterSpacing:0,textTransform:"none"}}>3 variantes — escolha a mais adequada ao momento</span>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                    {items.map((item,i)=>(
+                      <div key={i} style={{background:"linear-gradient(145deg,#141c2e,#0f1626)",border:`1px solid ${cfg.border}`,borderRadius:12,overflow:"hidden"}}>
+                        <div style={{padding:"8px 14px",background:cfg.bg,borderBottom:`1px solid ${cfg.border}`,display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:10,fontWeight:700,color:cfg.color,letterSpacing:.5}}>Variante {i+1}</span>
+                          {cfg.isObj && item[cfg.keyAssunto] && (
+                            <span style={{fontSize:11,color:"#a3b1c9",fontWeight:400}}>· Assunto: {item[cfg.keyAssunto]}</span>
+                          )}
+                        </div>
+                        <div className="msg" style={{borderLeft:`3px solid ${cfg.color}`,borderRadius:0,margin:0}}>
+                          {cfg.isObj ? item[cfg.keyCorpo] : item}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="msg">{safeData.estrategia?.mensagem_email_corpo}</div>
+              );
+            })}
+
+            {/* SPIN */}
+            <div className="card">
+              <div className="ct">Perguntas SPIN — Discovery Qualificada</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=>{
+                  const tipo = q.startsWith("SITUAÇÃO")?"S":q.startsWith("PROBLEMA")?"P":q.startsWith("IMPLICAÇÃO")?"I":"N";
+                  const tcolor = tipo==="S"?"#7dd3fc":tipo==="P"?"#fbbf24":tipo==="I"?"#f87171":"#34d399";
+                  return (
+                    <div key={i} className="spinq" style={{animation:`fadeSlide .3s ease ${i*0.04}s both`,alignItems:"flex-start"}}>
+                      <span style={{background:tcolor+"20",border:`1px solid ${tcolor}40`,color:tcolor,borderRadius:6,padding:"1px 7px",fontSize:9,fontWeight:800,flexShrink:0,marginTop:1}}>{tipo}</span>
+                      <span style={{fontSize:12}}>{q.replace(/^(SITUAÇÃO|PROBLEMA|IMPLICAÇÃO|NECESSIDADE): /,"")}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* SPIN + OBJEÇÕES */}
-            <div className="g2">
-              <div className="card">
-                <div className="ct">Perguntas SPIN — Discovery</div>
-                {safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=>(
-                  <div key={i} className="spinq" style={{animation:`fadeSlide .3s ease ${i*0.07}s both`}}>{q}</div>
-                ))}
-              </div>
-              <div className="card">
-                <div className="ct">Objeções & Respostas Sugeridas</div>
+            {/* OBJEÇÕES */}
+            <div className="card">
+              <div className="ct">Objeções & Respostas Sugeridas</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {safeArr(safeData.estrategia?.objecoes).map((o,i)=>(
-                  <div key={i} className="obj" style={{animation:`fadeSlide .3s ease ${i*0.08}s both`}}>
-                    <div style={{fontSize:12,color:"#fbbf24",fontWeight:700,marginBottom:8,lineHeight:1.4}}>"{o.objecao}"</div>
-                    <div style={{fontSize:12.5,color:"#e2e8f0",lineHeight:1.65}}>→ {o.resposta}</div>
+                  <div key={i} className="obj" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
+                    <div style={{fontSize:11.5,color:"#fbbf24",fontWeight:700,marginBottom:8,lineHeight:1.4}}>"{o.objecao}"</div>
+                    <div style={{fontSize:12,color:"#e2e8f0",lineHeight:1.65}}>→ {o.resposta}</div>
                   </div>
                 ))}
               </div>
