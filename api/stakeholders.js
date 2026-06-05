@@ -69,28 +69,33 @@ export default async function handler(req, res) {
   // ── CAMADA 2: Apollo.io ──────────────────────────────────────────────────────
   if (apolloKey) {
     const roles = targetRoles || [
-      "Fraud Prevention", "Prevenção à Fraude",
-      "Chief Product Officer", "Chief Technology Officer",
-      "Head of Product", "Head of Technology",
-      "CISO", "Chief Information Security Officer",
-      "VP Engineering", "Director of Engineering",
+      "Fraud Prevention Manager",
+      "Chief Product Officer",
+      "Chief Technology Officer",
+      "Head of Product",
+      "CISO",
+      "VP Engineering",
     ];
 
     try {
-      // Apollo People Search API
       const apolloBody = {
-        api_key: apolloKey,
         q_organization_domains: domain ? [domain] : undefined,
         q_organization_name: !domain ? company : undefined,
-        person_titles: roles.slice(0, 5), // Apollo limits title filters
+        person_titles: roles.slice(0, 5),
         page: 1,
         per_page: 10,
       };
 
+      // Apollo requires api_key in body OR Authorization header depending on plan
+      // Free/Basic: use api_key in body. Professional+: use Authorization Bearer
       const r = await fetch("https://api.apollo.io/v1/mixed_people/search", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
-        body: JSON.stringify(apolloBody),
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "X-Api-Key": apolloKey,
+        },
+        body: JSON.stringify({ ...apolloBody, api_key: apolloKey }),
       });
 
       if (r.ok) {
