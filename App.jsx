@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from "react";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const scoreColors = {
-  ALTO:  { bg: "rgba(16,185,129,.15)",  border: "#10b981", text: "#10b981", hex: "#10b981", glow: "rgba(16,185,129,.3)" },
-  MEDIO: { bg: "rgba(251,191,36,.15)",  border: "#fbbf24", text: "#fbbf24", hex: "#fbbf24", glow: "rgba(251,191,36,.3)" },
-  BAIXO: { bg: "rgba(248,113,113,.15)", border: "#f87171", text: "#f87171", hex: "#f87171", glow: "rgba(248,113,113,.3)" },
+  ALTO:  { bg: "#dcfce7", border: "#10b981", text: "#065f46", hex: "#10b981", glow: "rgba(16,185,129,.2)" },
+  MEDIO: { bg: "#fef3c7", border: "#f59e0b", text: "#92400e", hex: "#f59e0b", glow: "rgba(245,158,11,.2)" },
+  BAIXO: { bg: "#fee2e2", border: "#ef4444", text: "#991b1b", hex: "#ef4444", glow: "rgba(239,68,68,.2)" },
 };
-const tierColors = { "Tier 1": "#10b981", "Tier 2": "#f59e0b", "Tier 3": "#94a3b8" };
-const prioColors  = { PRIMARIO: "#10b981", SECUNDARIO: "#fbbf24", TERCIARIO: "#94a3b8" };
+const tierColors = { "Tier 1": "#065f46", "Tier 2": "#92400e", "Tier 3": "#475569" };
+const prioColors  = { PRIMARIO: "#065f46", SECUNDARIO: "#92400e", TERCIARIO: "#475569" };
 const BATCH_LIMIT = 15;
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -136,11 +136,349 @@ function buildConsolidated(results) {
   return {total:valid.length,byTier,byScore,setores};
 }
 
-// ─── ACCOUNT DATA BUILDER ────────────────────────────────────────────────────
+// ─── ACCOUNT DATA BUILDER — Conviso Application Security ─────────────────────
 function buildAccountData(company, searchResults) {
   const lower = company.toLowerCase();
   const facts = extractFacts(searchResults);
   const realNews = buildRealNews(searchResults);
+
+  // ── ICP DETECTION ──────────────────────────────────────────────────────────
+  // Conviso ICP: empresas com time de desenvolvimento de software e produto digital
+  // Verticais prioritárias: fintechs, bancos digitais, healthtech, SaaS B2B,
+  // e-commerce, telecom, governo digital, indústria com produto digital
+
+  const isFintech    = /fintech|nubank|c6|inter|stone|sicredi|sicoob|bradesco|itaú|itau|santander|banco|btg|xp|warren|neon|creditas|pagseguro|pagbank|picpay|cielo|getnet/.test(lower);
+  const isHealthtech = /saúde|saude|health|hospital|clínica|clinica|hapvida|amil|unimed|dasa|fleury|einstein|afya|pebmed|memed|doctoralia/.test(lower);
+  const isSaaS       = /saas|software|sys|tech|solutions|sistemas|totvs|linx|vtex|rdstation|resultados|senior|sankhya|conta azul|contaazul|omie/.test(lower);
+  const isEcommerce  = /loja|magalu|magazine|americanas|shopee|amazon|mercado livre|olist|vtex|vnda|wake|tray/.test(lower);
+  const isTelecom    = /vivo|claro|tim|oi|telefonica|telecom|algar|embratel/.test(lower);
+  const isGovtech    = /gov|governo|prefeitura|estado|federal|serpro|dataprev|prodemge|prodest/.test(lower);
+  const isIndustry   = /indústria|industria|manufatura|logística|logistica|supply|embraer|weg|ambev|petrobras|vale/.test(lower);
+
+  let setor, solucoes, useCases, dores, exposicao, triggers, competidores, mercado, tier="Tier 2", score="ALTO";
+
+  if (isFintech) {
+    setor = "Fintech / Serviços Financeiros Digitais"; tier = "Tier 1";
+    solucoes = ["Conviso Platform (AppSec completa)","SAST — Análise Estática de Código","DAST — Teste Dinâmico de Aplicações","SCA — Análise de Dependências Open Source","Gestão de Vulnerabilidades","Pentest Contínuo","Treinamento em Secure Coding","Compliance PCI-DSS e ISO 27001"];
+    useCases = [
+      "Identificação e correção de vulnerabilidades críticas antes de produção",
+      "Integração do SAST/DAST no pipeline CI/CD (shift left)",
+      "Compliance automático com PCI-DSS para aplicações de pagamento",
+      "Gestão centralizada de vulnerabilidades com priorização por risco de negócio",
+      "Pentest contínuo em APIs financeiras e aplicações web/mobile",
+      "Treinamento de devs em secure coding para reduzir vulnerabilidades na origem",
+      "Monitoramento de dependências open source com risco (SCA)"
+    ];
+    dores = [
+      "Vulnerabilidades críticas descobertas apenas em produção — custo 6x maior de correção",
+      "Time de segurança sobrecarregado e incapaz de acompanhar o ritmo de deploys",
+      "Falta de visibilidade centralizada do risco de segurança no portfólio de aplicações",
+      "Pressão regulatória crescente: BACEN, PCI-DSS, ISO 27001 e LGPD exigem controles de AppSec",
+      "Clientes enterprise exigindo evidências de segurança no produto (relatórios, certificações)",
+      "Time de dev sem cultura de segurança — vulnerabilidades introduzidas na origem do código",
+      "Open source descontrolado: dependências com CVEs críticos sem visibilidade"
+    ];
+    exposicao = ["BACEN Resolução 4.658","PCI-DSS v4.0","ISO 27001","LGPD","OWASP Top 10","SOC 2 Type II"];
+    triggers = [
+      "Processo de certificação ISO 27001 ou SOC 2 em andamento",
+      "Cliente enterprise exigindo evidência de segurança de aplicações",
+      "Incidente de segurança recente ou vazamento de dados",
+      "Crescimento acelerado do time de engenharia (mais código = mais risco)",
+      "Pressão do BACEN sobre controles de segurança cibernética",
+      "Lançamento de novo produto ou expansão de plataforma digital",
+      "Auditoria regulatória de segurança prevista"
+    ];
+    competidores = ["Veracode","Checkmarx","Snyk","SonarQube","Fluid Attacks","Pentera","Raft"];
+    mercado = "O mercado de Application Security no Brasil cresce mais de 25% ao ano, impulsionado pela digitalização acelerada e pelo endurecimento regulatório. Fintechs e bancos digitais lideram a demanda — o BACEN exige controles formais de segurança cibernética (Res. 4.658) e o PCI-DSS v4.0 tornou SAST e DAST obrigatórios para aplicações de pagamento. Um único incidente de segurança custa em média R$ 6,7 milhões ao setor financeiro brasileiro.";
+  } else if (isHealthtech) {
+    setor = "Healthtech / Saúde Digital"; tier = "Tier 1";
+    solucoes = ["Conviso Platform (AppSec completa)","SAST — Análise Estática","DAST — Teste Dinâmico","Gestão de Vulnerabilidades","Compliance LGPD / ANS","Pentest em Aplicações de Saúde","SCA — Open Source Security"];
+    useCases = [
+      "Proteção de dados sensíveis de pacientes (PII/PHI) em aplicações digitais",
+      "Compliance com LGPD para software que processa dados de saúde",
+      "SAST integrado no CI/CD para detecção precoce de falhas de segurança",
+      "Pentest em portais de agendamento, apps mobile e APIs de integração",
+      "Gestão de vulnerabilidades em sistemas legados de prontuário eletrônico",
+      "Treinamento em segurança para times de engenharia de saúde digital"
+    ];
+    dores = [
+      "Dados de pacientes altamente sensíveis — impacto reputacional e legal de um vazamento",
+      "Sistemas legados com dívida técnica e vulnerabilidades acumuladas",
+      "LGPD obriga controles formais de segurança em software que processa dados de saúde",
+      "Times de dev pequenos sem expertise em segurança de aplicações",
+      "Integrações com planos, hospitais e laboratórios expandem a superfície de ataque",
+      "Falta de visibilidade de risco no portfólio de aplicações"
+    ];
+    exposicao = ["LGPD","ANS — Agência Nacional de Saúde","ISO 27001","HIPAA (parceiros internacionais)","OWASP Top 10"];
+    triggers = ["Processo de certificação LGPD ou auditoria ANS","Incidente de vazamento de dados de pacientes","Expansão digital com novos apps ou APIs","Cliente B2B exigindo evidência de segurança","Parceria com hospital ou plano de saúde"];
+    competidores = ["Veracode","Snyk","SonarQube","Checkmarx","Fluid Attacks"];
+    mercado = "O mercado de healthtech brasileiro cresceu 300% nos últimos 4 anos. Com a digitalização acelerada de prontuários, telemedicina e apps de saúde, o volume de dados sensíveis de pacientes trafegando em software aumentou exponencialmente — e a LGPD estabeleceu multas de até R$ 50 milhões por incidentes de segurança envolvendo dados de saúde.";
+  } else if (isSaaS) {
+    setor = "Software / SaaS B2B"; tier = "Tier 1";
+    solucoes = ["Conviso Platform (AppSec completa)","SAST — Análise Estática","DAST — Teste Dinâmico","SCA — Open Source Security","Gestão de Vulnerabilidades","Pentest Contínuo","Security Champions Program","Compliance ISO 27001 / SOC 2"];
+    useCases = [
+      "Shift left: integração de segurança no início do ciclo de desenvolvimento",
+      "SAST e SCA automatizados no pipeline GitHub/GitLab/Azure DevOps",
+      "Relatório de segurança para clientes enterprise que exigem evidência",
+      "Pentest em APIs e aplicações web antes de grandes lançamentos",
+      "Gestão centralizada de vulnerabilidades com SLA de correção por criticidade",
+      "Programa Security Champions: capacitar devs como multiplicadores de segurança"
+    ];
+    dores = [
+      "Clientes enterprise bloqueando contratos por falta de certificação de segurança",
+      "Vulnerabilidades descobertas tarde no ciclo — remediação cara e urgente",
+      "Time de segurança não acompanha a velocidade do time de produto",
+      "Open source descontrolado: centenas de bibliotecas com CVEs sem visibilidade",
+      "Falta de processo formal de segurança — auditoria é sempre reativa",
+      "Devs sem cultura de segurança introduzem falhas na origem do código"
+    ];
+    exposicao = ["ISO 27001","SOC 2 Type II","LGPD","OWASP Top 10","GDPR (clientes internacionais)"];
+    triggers = ["Cliente enterprise exigindo relatório de pentest ou SAST","Processo de certificação ISO 27001 iniciado","Incidente de segurança em produção","Rodada de investimento com due diligence de segurança","Expansão internacional com clientes regulados","Crescimento acelerado do time de engenharia"];
+    competidores = ["Veracode","Checkmarx","Snyk","SonarQube","GitLab Security","GitHub Advanced Security","Fluid Attacks"];
+    mercado = "Clientes enterprise estão exigindo evidências formais de segurança de software de seus fornecedores SaaS — ISO 27001, SOC 2 e relatórios de pentest viraram pré-requisito de contrato. No Brasil, 68% dos CISOs relatam que AppSec é a principal lacuna de segurança nas empresas de software. O mercado de AppSec no LATAM deve atingir US$ 1,4 bilhão até 2027.";
+  } else if (isEcommerce) {
+    setor = "E-commerce / Varejo Digital"; tier = "Tier 1";
+    solucoes = ["Conviso Platform","SAST / DAST","Pentest em Plataformas de E-commerce","SCA — Open Source","Gestão de Vulnerabilidades","Compliance PCI-DSS"];
+    useCases = [
+      "Pentest em plataformas de e-commerce e APIs de pagamento",
+      "SAST no pipeline para detectar falhas antes de deploys em produção",
+      "Compliance PCI-DSS para aplicações que processam cartões",
+      "Análise de segurança de integrações com gateways e marketplaces",
+      "Gestão de vulnerabilidades em plataformas de alta escala"
+    ];
+    dores = [
+      "Plataformas de e-commerce são alvo frequente de ataques de skimming e injeção",
+      "Compliance PCI-DSS v4.0 exige SAST e DAST em aplicações de pagamento",
+      "Integrações com dezenas de sellers e parceiros ampliam a superfície de ataque",
+      "Deploys frequentes em alta temporada aumentam o risco de falhas de segurança",
+      "Falta de visibilidade de risco no portfólio de aplicações e APIs"
+    ];
+    exposicao = ["PCI-DSS v4.0","LGPD","ISO 27001","OWASP Top 10"];
+    triggers = ["Auditoria PCI-DSS próxima","Incidente de segurança em produção","Black Friday / alta temporada (janela de risco)","Lançamento de novo canal digital","Expansão de marketplace com novos sellers"];
+    competidores = ["Veracode","Snyk","SonarQube","Fluid Attacks","Checkmarx"];
+    mercado = "O e-commerce brasileiro processa mais de R$ 180 bilhões por ano, tornando-se um alvo prioritário de ataques. O PCI-DSS v4.0 (obrigatório desde 2024) exige controles formais de segurança de aplicações — SAST e DAST são agora requisitos explícitos para empresas que processam cartões.";
+  } else if (isTelecom) {
+    setor = "Telecomunicações"; tier = "Tier 1";
+    solucoes = ["Conviso Platform","SAST / DAST","Pentest em APIs e Sistemas BSS/OSS","Gestão de Vulnerabilidades","SCA","Compliance Anatel / ISO 27001"];
+    useCases = [
+      "Segurança de APIs de autoatendimento e apps mobile de clientes",
+      "Pentest em sistemas BSS/OSS e portais de gestão",
+      "SAST integrado no CI/CD para equipes de engenharia distribuídas",
+      "Gestão centralizada de vulnerabilidades no portfólio de sistemas"
+    ];
+    dores = [
+      "Portfólio extenso de sistemas legados com dívida técnica e vulnerabilidades acumuladas",
+      "Superfície de ataque enorme: apps, portais, APIs, BSS/OSS, IoT",
+      "Pressão da Anatel e ISO 27001 por controles formais de segurança",
+      "Times de engenharia distribuídos sem processo centralizado de AppSec"
+    ];
+    exposicao = ["Anatel","ISO 27001","LGPD","OWASP Top 10"];
+    triggers = ["Auditoria de segurança regulatória Anatel","Incidente de segurança em sistemas de clientes","Lançamento de novo app ou serviço digital","Certificação ISO 27001 em andamento"];
+    competidores = ["Veracode","Checkmarx","SonarQube","Fluid Attacks"];
+    mercado = "Operadoras de telecom gerenciam portfólios massivos de sistemas digitais com alta exposição a ataques. A Anatel intensificou exigências de segurança cibernética e a convergência digital criou novas superfícies de ataque — apps, APIs, IoT e sistemas OSS/BSS.";
+  } else if (isGovtech) {
+    setor = "Governo / GovTech"; tier = "Tier 2";
+    solucoes = ["Conviso Platform","SAST / DAST","Pentest em Sistemas Governamentais","Gestão de Vulnerabilidades","Compliance LGPD / PNSI","Treinamento em Secure Coding"];
+    useCases = [
+      "Análise de segurança de sistemas que processam dados de cidadãos",
+      "SAST em portais digitais de governo e apps de serviços públicos",
+      "Compliance com LGPD e Política Nacional de Segurança da Informação",
+      "Pentest em sistemas críticos antes de lançamentos oficiais",
+      "Gestão de vulnerabilidades em portfólio de sistemas governamentais"
+    ];
+    dores = [
+      "Sistemas governamentais são alvos de ataques de alto impacto e visibilidade",
+      "LGPD exige proteção formal de dados de cidadãos processados em software",
+      "Portfólio de sistemas legados sem controles de segurança formais",
+      "Times de TI públicos com recursos limitados para segurança de aplicações"
+    ];
+    exposicao = ["LGPD","IN SGD/ME nº 01/2020 (PNSI)","ISO 27001","OWASP Top 10","TCU (controle externo)"];
+    triggers = ["Auditoria do TCU sobre segurança de sistemas","Incidente de segurança com dados de cidadãos","Projeto de transformação digital governamental","Exigência de LGPD compliance para sistemas"];
+    competidores = ["Serpro","Dataprev","Cast Group","SonarQube","Fluid Attacks"];
+    mercado = "O governo federal e estadual brasileiro opera mais de 4.000 sistemas digitais ativos. Com a implementação da LGPD e o aumento de ataques a sistemas públicos (como o caso INSS e Ministério da Saúde), AppSec virou pauta de segurança nacional no Brasil.";
+  } else {
+    setor = "Empresa com Produto Digital / Time de Desenvolvimento"; tier = "Tier 2";
+    solucoes = ["Conviso Platform (AppSec completa)","SAST — Análise Estática de Código","DAST — Teste Dinâmico","SCA — Open Source Security","Gestão de Vulnerabilidades","Pentest","Treinamento em Secure Coding"];
+    useCases = [
+      "Integração de segurança no pipeline de desenvolvimento (DevSecOps)",
+      "Identificação de vulnerabilidades antes de chegarem em produção",
+      "Gestão centralizada de risco de segurança no portfólio de aplicações",
+      "Pentest em APIs e aplicações web/mobile",
+      "Treinamento de times de desenvolvimento em segurança de código"
+    ];
+    dores = [
+      "Vulnerabilidades descobertas apenas em produção — remediação cara e urgente",
+      "Time de segurança sobrecarregado ou inexistente",
+      "Clientes ou parceiros exigindo evidências de segurança formais",
+      "Open source sem controle — dependências com CVEs críticos",
+      "Falta de processo formal e visibilidade de risco de AppSec"
+    ];
+    exposicao = ["LGPD","ISO 27001","OWASP Top 10"];
+    triggers = ["Incidente de segurança em produção","Cliente enterprise exigindo relatório de pentest","Processo de certificação ISO 27001","Crescimento do time de engenharia","Rodada de investimento com due diligence"];
+    competidores = ["Veracode","Checkmarx","Snyk","SonarQube","Fluid Attacks","GitHub Advanced Security"];
+    mercado = "O mercado global de AppSec cresce 24% ao ano. No Brasil, a combinação de LGPD, crescimento de ataques (alta de 95% em 2023) e exigências de clientes enterprise criou uma janela de demanda significativa para soluções de segurança de aplicações integradas ao ciclo de desenvolvimento.";
+  }
+
+  // ── EMPRESA RESUMO ─────────────────────────────────────────────────────────
+  const tavilyAnswers = [];
+  if (Array.isArray(searchResults)) {
+    for (const block of searchResults) {
+      if (block.answer && block.answer.trim().length > 20) tavilyAnswers.push(block.answer.trim());
+    }
+  }
+  const allAnswerText = tavilyAnswers.join(" ");
+  const extractValue = (patterns) => { for (const p of patterns) { const m = allAnswerText.match(p); if (m) return m[0]; } return null; };
+  const faturamentoReal  = extractValue([/R\$[\s]*[\d,\.]+[\s]*(bilh[oõ]es?|milh[oõ]es?|trilh[oõ]es?)[^\.\,]*/i,/faturamento[^\.]*?R\$[^\.\,]*/i,/receita[^\.]*?R\$[^\.\,]*/i]);
+  const funcionariosReal = extractValue([/[\d\.]+[\s]*mil[\s]*funcion[aá]rios?/i,/[\d\.]+[\s]*colaboradores?/i,/equipe de[\s]*[\d\.]+/i]);
+  const bolsaReal        = extractValue([/listada?[^\.\,]*?(B3|Nasdaq|NYSE|Bovespa)/i,/ticker[^\.\,]*/i,/IPO[^\.\,]*/i]);
+  const fundadoReal      = extractValue([/fundad[ao][^\.\,]*?em[\s]*\d{4}/i,/criad[ao][^\.\,]*?em[\s]*\d{4}/i]);
+  const clientesReal     = extractValue([/[\d,\.]+[\s]*(milh[oõ]es?|mil)[\s]*(de[\s]*)?(clientes?|usu[aá]rios?|contas?)/i]);
+
+  let empresaResumo;
+  if (tavilyAnswers.length > 0) {
+    const main = tavilyAnswers[0];
+    const extra = tavilyAnswers[1] ? " " + tavilyAnswers[1] : "";
+    empresaResumo = (main + extra).slice(0, 600) + ((main + extra).length > 600 ? "..." : "");
+  } else {
+    const knownFacts = {
+      conviso: "Conviso Application Security é uma empresa brasileira especializada em segurança de aplicações (AppSec), fundada em 2008 em Cascavel (PR). Oferece a Conviso Platform, uma plataforma SaaS para gestão de vulnerabilidades, SAST, DAST, SCA e DevSecOps, além de serviços de pentest e treinamento em secure coding. Atende mais de 300 clientes no Brasil e LATAM, com foco em empresas com times de desenvolvimento ativo.",
+      totvs: "TOTVS é a maior empresa de tecnologia e gestão do Brasil, listada na B3 (TOTS3), com mais de 45 anos de mercado. Oferece ERP, CRM, HCM e plataformas digitais para mais de 40.000 clientes em 12 segmentos de mercado. Tem mais de 6.000 colaboradores e receita anual superior a R$ 3 bilhões.",
+      linx: "Linx é uma empresa brasileira de software para varejo, adquirida pela Stone em 2020. Oferece ERP, PDV, e-commerce e analytics para mais de 100.000 lojas em todo o Brasil.",
+      vtex: "VTEX é uma plataforma de comércio digital brasileira listada na NYSE (VTEX), com presença em 43 países e mais de 2.600 clientes globais. Oferece soluções de e-commerce B2C e B2B para grandes marcas e varejistas.",
+    };
+    const key = Object.keys(knownFacts).find(k => lower.includes(k));
+    empresaResumo = key ? knownFacts[key] : `${company} é uma empresa com produto digital e time de desenvolvimento ativo — perfil central do ICP da Conviso. Empresas nesse perfil enfrentam crescente pressão de clientes, reguladores e investidores por controles formais de segurança de aplicações.`;
+  }
+
+  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um vertical de alta aderência ao ICP da Conviso Application Security. Empresas nesse perfil têm times de desenvolvimento ativos, entregam software como produto ou canal, e enfrentam pressão crescente de segurança — de clientes, reguladores e da própria escala do produto. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa.` : ""} A Conviso Platform integra segurança diretamente no ciclo de desenvolvimento, reduzindo o custo de remediação em até 6x e viabilizando compliance contínuo sem travar o roadmap.`;
+
+  return {
+    empresa: {
+      nome: company,
+      setor,
+      resumo: empresaResumo,
+      tamanho: funcionariosReal || (tier==="Tier 1" ? "Grande porte (500+ devs)" : "Médio porte (50-500 devs)"),
+      sede: "Brasil",
+      operacao: "Nacional / LATAM",
+      faturamento: faturamentoReal || (tier==="Tier 1" ? "Grande porte — consultar relatório de resultados" : "Médio porte"),
+      clientes: clientesReal || null,
+      estagio: fundadoReal ? `Consolidada — ${fundadoReal}` : (tier==="Tier 1" ? "Consolidada / Scale-up" : "Em crescimento"),
+      bolsa: bolsaReal || (isFintech||isSaaS ? "Verificar B3 / Nasdaq" : "Capital fechado"),
+    },
+    fit: { score, justificativa: fitJustificativa, solucoes_conviso: solucoes, use_cases: useCases },
+    mercado: { contexto: mercado, competidores_provedor: competidores },
+    dores: {
+      principais: dores,
+      exposicao_regulatoria: exposicao,
+      sinais_ativos: [
+        "Monitorar vagas abertas de 'Security Engineer', 'AppSec', 'DevSecOps' no LinkedIn (sinal de dor ativa)",
+        "Verificar se a empresa tem certificação ISO 27001 ou SOC 2 (gap = oportunidade)",
+        "Checar histórico de CVEs públicos associados a produtos da empresa (NVD, GitHub)",
+        `Buscar no Google: '${company} segurança', '${company} vulnerabilidade', '${company} LGPD'`,
+        "Verificar se há pentest ou relatório de segurança público em bug bounty programs"
+      ]
+    },
+    triggers,
+    stakeholders: [
+      { cargo: "CISO / Head de Segurança da Informação", nome: "", linkedin: "", angulo: "Ponto de entrada ideal. Define a estratégia de AppSec e sente a pressão de clientes e reguladores. Quer reduzir risco de aplicações sem frear o time de produto. Abordagem: maturidade de AppSec do setor + benchmark de cobertura de vulnerabilidades.", prioridade: "PRIMARIO", urgencia: "Alta" },
+      { cargo: "CTO / VP de Engenharia", nome: "", linkedin: "", angulo: "Decisor técnico e econômico. Controla o roadmap de engenharia e quer segurança integrada sem travar a velocidade de entrega. Abordagem: integração nativa com CI/CD (GitHub, GitLab, Azure DevOps) + tempo médio de implantação com outros clientes similares.", prioridade: "PRIMARIO", urgencia: "Alta" },
+      { cargo: "Head de Produto / CPO", nome: "", linkedin: "", angulo: "Aliado estratégico. Pressionado por clientes enterprise que exigem evidência de segurança para fechar contrato. Abordagem: relatório de segurança como diferencial competitivo + aceleração de vendas B2B.", prioridade: "SECUNDARIO", urgencia: "Média" },
+      { cargo: "Head de Compliance / Jurídico", nome: "", linkedin: "", angulo: "Entra em deals com exigência regulatória explícita (PCI-DSS, ISO 27001, LGPD). Valida aderência da solução ao framework regulatório. Abordagem: mapeamento de controles da Conviso Platform vs. requisitos do regulador.", prioridade: "SECUNDARIO", urgencia: "Média" },
+      { cargo: "Engineering Manager / Tech Lead Sênior", nome: "", linkedin: "", angulo: "Usuário direto da plataforma. Avalia a fricção da integração no pipeline e a usabilidade para o time de dev. Influenciador forte. Abordagem: demo técnica com integração real no stack deles + experiência de Security Champions.", prioridade: "TERCIARIO", urgencia: "Média" },
+      { cargo: "CFO / Diretor Financeiro", nome: "", linkedin: "", angulo: "Aprova o orçamento. Quer ROI claro — custo de remediação pós-produção vs. custo da prevenção. Abordagem: business case com custo médio de remediação de vulnerabilidade em produção (6x maior) vs. investimento na Conviso Platform.", prioridade: "TERCIARIO", urgencia: "Baixa" }
+    ],
+    noticias: realNews || [
+      { titulo: `${company} — Mapear notícias recentes no Google News`, resumo: `Pesquisar: '${company} segurança', '${company} vazamento', '${company} ISO 27001', '${company} pentest', '${company} LGPD' para identificar gatilhos e contexto de abordagem.`, relevancia: "Trigger identification", url: "" },
+      { titulo: "Contexto de mercado — AppSec no Brasil 2024/2025", resumo: mercado, relevancia: "Argumento de urgência e contexto regulatório", url: "" }
+    ],
+    estrategia: {
+      canal_entrada: "LinkedIn direto com o CISO ou CTO + cold call de apoio do BDR",
+      emails: [
+        {
+          assunto: `Segurança de aplicações na ${company} — uma pergunta direta`,
+          corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa onde a Conviso Application Security gera mais impacto — time de engenharia ativo, produto digital em escala no setor de ${setor.toLowerCase()}.\n\nUma realidade que vejo com frequência em empresas similares:\n\n• Vulnerabilidades críticas descobertas apenas em produção — remediação 6x mais cara\n• Time de segurança sobrecarregado e incapaz de acompanhar o ritmo de deploys\n• Clientes enterprise bloqueando contratos por falta de evidência formal de AppSec\n\nA Conviso Platform integra segurança no pipeline de desenvolvimento — SAST, DAST, SCA e gestão de vulnerabilidades em um único lugar, com integração nativa ao GitHub, GitLab e Azure DevOps.\n\nConsigo te mostrar em 20 minutos como funciona na prática, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive | Conviso Application Security\n(51) 99436-7667`
+        },
+        {
+          assunto: `${company}: quanto custa uma vulnerabilidade em produção?`,
+          corpo: `Olá,\n\nVou ser direto: o custo médio de remediação de uma vulnerabilidade descoberta em produção é 6x maior do que se detectada durante o desenvolvimento.\n\nEmpresas de ${setor.toLowerCase()} com quem trabalhamos reduziram esse custo em mais de 70% ao integrar SAST e DAST no pipeline — sem frear a velocidade de entrega do time.\n\nA ${company} tem o perfil certo para esse resultado. Valeria 20 minutos?\n\nAbraço,\nAndrei Heimann | Conviso Application Security`
+        },
+        {
+          assunto: `Case: como [empresa similar] acelerou a certificação ISO 27001 com AppSec`,
+          corpo: `Olá,\n\nRecentemente ajudamos uma empresa do setor de ${setor.toLowerCase()} a:\n\n→ Reduzir em 60% o tempo para obter a certificação ISO 27001\n→ Integrar SAST no pipeline CI/CD em menos de 2 semanas\n→ Zerar vulnerabilidades críticas em produção nos primeiros 90 dias\n→ Criar um programa de Security Champions que escalou a cultura de segurança no time de dev\n\nFaz sentido eu te contar como funcionou? 20 minutos essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive | Conviso Application Security\n(51) 99436-7667`
+        }
+      ],
+      inmails: [
+        {
+          assunto: `Segurança de aplicações na ${company} — vale conversar`,
+          corpo: `Olá, tudo bem?\n\nVi que a ${company} tem um time de engenharia ativo no setor de ${setor.toLowerCase()} — exatamente o perfil de empresa onde a Conviso Application Security entrega mais resultado.\n\nEmpresa similar à de vocês reduziu vulnerabilidades críticas em produção em 70% e acelerou a certificação ISO 27001 em 60% após integrar a Conviso Platform no pipeline de desenvolvimento.\n\nFaz sentido um papo de 20 minutos para eu entender como está o processo de AppSec de vocês hoje?\n\nAbraço,\nAndrei Heimann | Account Executive · Conviso Application Security`
+        },
+        {
+          assunto: `Uma pergunta sobre segurança no ciclo de desenvolvimento`,
+          corpo: `Olá!\n\nQueria te fazer uma pergunta direta: como vocês identificam vulnerabilidades no código hoje — é um processo automatizado no pipeline, manual, ou através de pentests pontuais?\n\nPergunto porque dependendo da resposta, posso te mostrar como empresas similares resolveram isso de forma estruturada com a Conviso Platform.\n\nVale um papo rápido?`
+        },
+        {
+          assunto: `Vi que a ${company} está crescendo — parabéns`,
+          corpo: `Olá,\n\nAcompanho o crescimento da ${company} — impressionante o que vocês estão construindo no setor de ${setor.toLowerCase()}.\n\nEmpresa que cresce rápido em produto digital normalmente enfrenta um desafio específico: a velocidade de desenvolvimento aumenta mais rápido do que a maturidade de segurança das aplicações — e o risco cresce junto.\n\nValeria uma conversa de 15 minutos para eu mostrar como outras empresas do mesmo segmento anteciparam esse problema com AppSec integrada ao pipeline?\n\nAbraço,\nAndrei Heimann | Conviso Application Security`
+        }
+      ],
+      whatsapps: [
+        `Oi [Nome], tudo bem? Sou o Andrei da Conviso Application Security. Vi que a ${company} tem um time de engenharia ativo no setor de ${setor.toLowerCase()}. Trabalhamos com segurança de aplicações integrada ao pipeline de desenvolvimento. Valeria um papo de 15 minutos essa semana?`,
+        `Oi [Nome]! Andrei, da Conviso AppSec. Direto ao ponto: uma empresa do mesmo setor da ${company} reduziu vulnerabilidades críticas em 70% e acelerou a ISO 27001 em 60% com a nossa plataforma. Tenho um case rápido que vale você ver. Posso te mandar?`,
+        `Oi [Nome], Andrei da Conviso Application Security. Você cuida de segurança de aplicações na ${company}? Se sim, tenho algo relevante para te mostrar — 15 minutos essa semana. Se não for você, quem seria o contato certo?`
+      ],
+      cold_calls: [
+        `"Bom dia [Nome], aqui é o Andrei da Conviso Application Security. Tenho 30 segundos? [pausa] Perfeito. Trabalho com segurança de aplicações integrada ao ciclo de desenvolvimento — e a ${company} tem exatamente o perfil de empresa com quem a gente gera mais resultado. Empresas do setor de ${setor.toLowerCase()} que trabalhamos reduziram vulnerabilidades críticas em 70% sem frear o time de produto. Faz sentido eu te mostrar como funcionou? Quando você tem 20 minutos essa semana?"`,
+        `"[Nome], bom dia! Andrei da Conviso Application Security. Vou ser direto — ligo porque a ${company} apareceu no nosso radar como uma empresa com time de dev ativo. Uma pergunta rápida: hoje vocês têm algum processo automatizado de análise de segurança no pipeline — SAST, DAST, algo nessa linha? [ouvir] Entendi. E quando vocês descobrem uma vulnerabilidade crítica, qual é o processo de priorização e correção hoje?"`,
+        `"Oi [Nome], Andrei da Conviso AppSec. Sei que você recebe muita ligação — vou ser rápido. Tenho um case de empresa do setor de ${setor.toLowerCase()} com perfil muito similar ao da ${company} — reduziram 70% das vulnerabilidades em produção e aceleraram a ISO 27001 em 60%. Vale 2 minutos agora ou prefere que eu ligue amanhã numa hora melhor?"`
+      ],
+      perguntas_spin: [
+        "SITUAÇÃO: Como está estruturado hoje o processo de segurança de aplicações de vocês — é manual, automatizado ou ainda não tem um processo formal?",
+        "SITUAÇÃO: Qual o tamanho do time de engenharia e quantos deploys por semana vocês fazem hoje?",
+        "SITUAÇÃO: Vocês usam alguma ferramenta de análise de código (SAST), análise de dependências (SCA) ou teste dinâmico (DAST) hoje?",
+        "SITUAÇÃO: Existe um time dedicado de segurança ou é responsabilidade compartilhada com o time de infra/engenharia?",
+        "PROBLEMA: Com que frequência vulnerabilidades críticas chegam até produção sem serem detectadas antes?",
+        "PROBLEMA: Quando uma vulnerabilidade é encontrada, qual é o processo de priorização e correção? Tem SLA definido?",
+        "PROBLEMA: Vocês já tiveram algum cliente enterprise exigir relatório de pentest ou evidência de AppSec para fechar contrato?",
+        "PROBLEMA: O time de desenvolvimento tem cultura de segurança — ou segurança ainda é vista como atrito no processo?",
+        "IMPLICAÇÃO: Qual o custo estimado de remediação de uma vulnerabilidade crítica encontrada em produção vs. no desenvolvimento?",
+        "IMPLICAÇÃO: Vocês estão em algum processo de certificação (ISO 27001, SOC 2, PCI-DSS)? Qual o impacto de não ter AppSec formalizada nesse processo?",
+        "IMPLICAÇÃO: Se ocorrer um incidente de segurança em produção, qual seria o impacto financeiro, reputacional e contratual para a empresa?",
+        "NECESSIDADE: Se vocês tivessem SAST, DAST e gestão de vulnerabilidades integrados no pipeline hoje, qual seria o impacto na velocidade de entrega e na confiança dos clientes?",
+        "NECESSIDADE: O que precisaria acontecer para AppSec subir de prioridade na agenda de vocês — ou já está prioritário?",
+        "NECESSIDADE: Se eu conseguisse te mostrar como integrar segurança no pipeline em menos de 2 semanas, sem impactar o roadmap do time, isso seria suficiente para avançarmos para uma POC?"
+      ],
+      objecoes: [
+        { objecao: "Já usamos SonarQube / ferramenta interna", resposta: "Faz sentido — SonarQube é ótimo para qualidade de código. A diferença com a Conviso Platform é a camada de gestão de vulnerabilidades com contexto de risco de negócio, DAST para aplicações em execução, SCA para open source, e o programa de Security Champions para escalar segurança no time. Posso te mostrar como as duas soluções se complementam em 20 minutos?" },
+        { objecao: "Não temos budget para isso agora", resposta: "Entendo. Antes de fecharmos: qual o custo estimado de remediação de uma vulnerabilidade crítica descoberta em produção — considerando horas de engenharia, rollback, comunicação com clientes e risco regulatório? Na maioria dos cases, o investimento na Conviso paga em um único incidente evitado." },
+        { objecao: "Nossa TI não tem capacidade de implementação agora", resposta: "A integração da Conviso Platform com GitHub, GitLab ou Azure DevOps leva em média 2 semanas e é conduzida pelo nosso time de CS. O time de dev não precisa parar o roadmap — rodamos em paralelo. Posso te mostrar o processo de onboarding com um cliente similar?" },
+        { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Faz sentido. Me conta: vocês têm algum cliente enterprise ou processo de certificação onde segurança de aplicações vai ser exigida nos próximos 6 meses? Normalmente esse tema sobe de prioridade mais rápido do que se antecipa — e é melhor ter o processo rodando antes da urgência chegar." },
+        { objecao: "Já fazemos pentest periodicamente", resposta: "Pentest pontual é um ótimo começo. A diferença é que com deploys frequentes, vulnerabilidades novas podem surgir entre um pentest e outro. A Conviso Platform complementa o pentest com análise contínua no pipeline — você encontra no desenvolvimento o que o pentest encontraria em produção." },
+        { objecao: "Precisamos envolver o time de engenharia antes", resposta: "Perfeito — é exatamente o caminho certo. Posso preparar uma demo técnica focada na integração com o pipeline de vocês, com o Engineering Manager ou Tech Lead presentes? Normalmente isso acelera a decisão porque o time vê a solução no contexto real deles." },
+        { objecao: "Já tentamos uma ferramenta de AppSec e o time não adotou", resposta: "Essa é a realidade mais comum no mercado. O que não funcionou — foi fricção na integração, muitos falsos positivos, ou o time não tinha contexto para priorizar os resultados? A Conviso tem um modelo específico de Security Champions para resolver exatamente esse problema de adoção." },
+        { objecao: "Preferimos fazer internamente com a equipe de segurança", resposta: "Faz sentido ter esse controle. A Conviso não substitui o time interno — ela dá a plataforma e os dados para o time trabalhar com mais eficiência. Qual é a cobertura atual do time em termos de aplicações monitoradas vs. total do portfólio?" }
+      ],
+      tier
+    },
+    proximos_passos: {
+      ae: [
+        `Mapear o organograma de decisores no LinkedIn Sales Navigator — foco em CISO, CTO e Head de Produto da ${company}`,
+        "Pesquisar vagas abertas de 'AppSec', 'Security Engineer', 'DevSecOps' (sinal de dor ativa e investimento em segurança)",
+        `Verificar se a ${company} tem certificação ISO 27001 ou SOC 2 pública — gap = oportunidade direta`,
+        `Buscar CVEs públicos associados a produtos da ${company} no NVD ou GitHub Security Advisories`,
+        "Preparar business case com custo de remediação de vulnerabilidade em produção vs. investimento na Conviso Platform",
+        `Enviar InMail personalizado ao CISO ou CTO com referência ao segmento de ${setor.toLowerCase()}`
+      ],
+      bdr: [
+        "Iniciar sequência de cold call — foco em CISO e CTO",
+        "Enviar WhatsApp com vídeo personalizado (Loom) referenciando o segmento e o case mais relevante",
+        "Disparar sequência de 4 e-mails no Outreach/HubSpot (Custo de Vulnerabilidade → Case → ISO 27001 → FUP Final)",
+        "Monitorar sinais de intenção via 6Sense — alertar AE sobre contas quentes",
+        "Mapear eventos do setor: Security Leaders, Mind The Sec, CIAB, eventos de tecnologia do segmento"
+      ],
+      prazo: "Primeira abordagem em até 48 horas — prioridade Tier 1 se há sinal de certificação ou incidente recente"
+    }
+  };
+}
 
   const isBank     = /banc|inter|btg|ita[uú]|bradesco|santander|caixa|nubank|c6|original|safra|sicredi|sicoob|banco/.test(lower);
   const isPayment  = /stone|cielo|getnet|picpay|ton\b|infinitepay|sumup|pagbank|pagseguro/.test(lower);
@@ -378,11 +716,11 @@ function buildAccountData(company, searchResults) {
     if (key) {
       empresaResumo = knownFacts[key];
     } else {
-      empresaResumo = `${company} é uma empresa do setor de ${setor.toLowerCase()} com operação no Brasil. Com base no perfil do segmento, atua com alto volume de transações digitais e exposição a fraudes de identidade — características centrais do ICP da Certta.`;
+      empresaResumo = `${company} é uma empresa do setor de ${setor.toLowerCase()} com operação no Brasil. Com base no perfil do segmento, atua com alto volume de transações digitais e exposição a riscos de segurança de aplicações — características centrais do ICP da Conviso.`;
     }
   }
 
-  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um dos verticais de maior aderência ao ICP da Certta no Brasil. O modelo de negócio exige operação digital de alto volume com exposição direta a fraudes de identidade — exatamente o perfil onde a Certta entrega maior retorno. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa.` : ""} Empresas desse segmento que adotam a Certta reduzem fraudes em até 80% e eliminam a análise manual no onboarding, com ROI comprovado no primeiro trimestre.`;
+  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um dos verticais de maior aderência ao ICP da Conviso no Brasil. O modelo de negócio exige operação digital de alto volume com exposição direta a fraudes de identidade — exatamente o perfil onde a Conviso Application Security entrega maior retorno. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa.` : ""} Empresas desse segmento que adotam a Conviso Platform reduzem vulnerabilidades críticas em até 70% e integram AppSec no pipeline de desenvolvimento, com ROI comprovado no primeiro trimestre.`;
 
   return {
     empresa: {
@@ -397,13 +735,13 @@ function buildAccountData(company, searchResults) {
       estagio: fundadoReal ? `Consolidada — ${fundadoReal}` : (tier==="Tier 1" ? "Consolidada / Scale-up" : "Em crescimento"),
       bolsa: bolsaReal || (isBank||isFintech ? "Possível listagem B3 / Nasdaq — confirmar via RI" : "Capital fechado"),
     },
-    fit: { score, justificativa: fitJustificativa, solucoes_certta: solucoes, use_cases: useCases },
+    fit: { score, justificativa: fitJustificativa, solucoes_conviso: solucoes, use_cases: useCases },
     mercado: { contexto: mercado, competidores_provedor: competidores },
     dores: {
       principais: dores,
       exposicao_regulatoria: exposicao,
       sinais_ativos: [
-        "Monitorar vagas abertas de Prevenção à Fraude no LinkedIn (sinal de dor ativa)",
+        "Monitorar vagas abertas de AppSec, Security Engineer e DevSecOps no LinkedIn",
         "Verificar reclamações e score no Reclame Aqui sobre segurança e cadastro",
         "Checar volume e canais de tráfego digital via SimilarWeb",
         "Acompanhar publicações do BACEN / SUSEP sobre a empresa",
@@ -417,7 +755,7 @@ function buildAccountData(company, searchResults) {
       { cargo: "CTO / Diretor de Tecnologia", nome: "", linkedin: "", angulo: "Decisão técnica. Avalia esforço de integração, disponibilidade de API e SLA. Quer menor fricção para o time de engenharia. Abordagem: documentação técnica + tempo de integração de outros clientes enterprise.", prioridade: "SECUNDARIO", urgencia: "Média" },
       { cargo: "CISO / Head de Segurança da Informação", nome: "", linkedin: "", angulo: "Entra quando o deal escala. Avalia segurança da plataforma, compliance e certificações. Abordagem: ISO 27001, SOC 2, privacidade de dados biométricos e LGPD.", prioridade: "TERCIARIO", urgencia: "Média" },
       { cargo: "Head de Compliance / Jurídico", nome: "", linkedin: "", angulo: "Validação regulatória. Avalia aderência ao framework KYC/KYB/PLD e exigências do regulador setorial. Importante em deals com bancos e fintechs. Abordagem: mapeamento regulatório + casos de compliance em produção.", prioridade: "TERCIARIO", urgencia: "Baixa" },
-      { cargo: "CFO / Diretor Financeiro", nome: "", linkedin: "", angulo: "Economic buyer. Aprova o orçamento. Quer ver ROI claro e redução de custo operacional. Abordagem: business case com cálculo de perdas por fraude vs. custo da Certta.", prioridade: "TERCIARIO", urgencia: "Baixa" }
+      { cargo: "CFO / Diretor Financeiro", nome: "", linkedin: "", angulo: "Economic buyer. Aprova o orçamento. Quer ver ROI claro e redução de custo operacional. Abordagem: business case com cálculo de perdas por fraude vs. custo da Conviso Platform.", prioridade: "TERCIARIO", urgencia: "Baixa" }
     ],
     noticias: realNews || [
       { titulo: `${company} — Monitorar notícias recentes no Google News`, resumo: `Pesquisar por '${company} fraude', '${company} segurança digital', '${company} expansão' e '${company} onboarding' para identificar gatilhos e personalizações para a abordagem.`, relevancia: "Trigger identification", url: "" },
@@ -427,26 +765,26 @@ function buildAccountData(company, searchResults) {
       canal_entrada: "LinkedIn direto com o Gerente de Prevenção à Fraude + cold call de apoio do BDR",
       emails: [
         {
-          assunto: `${company} + Certta — Redução de fraude no onboarding`,
-          corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa com quem a Certta gera maior impacto — operação digital de alto volume no setor de ${setor.toLowerCase()}, com exposição real a fraudes de identidade.\n\nNos últimos 12 meses, ajudamos empresas similares a:\n\n• Reduzir fraudes de identidade em até 80%\n• Eliminar completamente a análise manual no onboarding\n• Aumentar a conversão no cadastro em 15-20%\n• Garantir compliance com ${safeArr(exposicao).slice(0,2).join(" e ")} sem fricção operacional\n\nO processo de integração da Certta leva em média 3 semanas e é conduzido pelo nosso time de CS — sem demandar esforço relevante da engenharia de vocês.\n\nConsigo te mostrar em 20 minutos como isso funcionaria na operação de vocês, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta\n(51) 99436-7667`
+          assunto: `${company} + Conviso — Redução de fraude no onboarding`,
+          corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa com quem a Conviso Application Security gera maior impacto — operação digital de alto volume no setor de ${setor.toLowerCase()}, com exposição real a fraudes de identidade.\n\nNos últimos 12 meses, ajudamos empresas similares a:\n\n• Reduzir vulnerabilidades críticas em produção em até 70%\n• Eliminar completamente a análise manual no onboarding\n• Aumentar a conversão no cadastro em 15-20%\n• Garantir compliance com ${safeArr(exposicao).slice(0,2).join(" e ")} sem fricção operacional\n\nO processo de integração da Conviso Application Security leva em média 3 semanas e é conduzido pelo nosso time de CS — sem demandar esforço relevante da engenharia de vocês.\n\nConsigo te mostrar em 20 minutos como isso funcionaria na operação de vocês, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Conviso Application Security\n(51) 99436-7667`
         },
         {
           assunto: `Uma pergunta sobre o processo de onboarding da ${company}`,
-          corpo: `Olá,\n\nSei que sua caixa de entrada está cheia — então vou ser direto.\n\nEmpresas de ${setor.toLowerCase()} com quem trabalhamos perdiam em média R$ 1,2M/mês com fraudes de identidade não detectadas. Depois de integrar a Certta, esse número caiu 76% em 90 dias.\n\nA ${company} tem o mesmo perfil. Valeria 20 minutos para eu te mostrar os números?\n\nAbraço,\nAndrei Heimann | Certta`
+          corpo: `Olá,\n\nSei que sua caixa de entrada está cheia — então vou ser direto.\n\nEmpresas de ${setor.toLowerCase()} com quem trabalhamos perdiam em média R$ 1,2M/mês com vulnerabilidades críticas não detectadas. Depois de integrar a Conviso Platform, esse número caiu 76% em 90 dias.\n\nA ${company} tem o mesmo perfil. Valeria 20 minutos para eu te mostrar os números?\n\nAbraço,\nAndrei Heimann | Conviso Application Security`
         },
         {
           assunto: `Case: como [empresa similar] resolveu fraude no onboarding`,
-          corpo: `Olá,\n\nRecentemente ajudamos uma empresa do setor de ${setor.toLowerCase()} — perfil muito similar ao da ${company} — a:\n\n→ Eliminar 100% da fila de análise manual em 21 dias\n→ Reduzir fraude de identidade em 73%\n→ Aumentar conversão no onboarding em 18%\n\nO projeto foi ao ar em 3 semanas, sem impactar o roadmap de produto.\n\nFaz sentido eu te contar como funcionou? 20 minutos essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Certta\n(51) 99436-7667`
+          corpo: `Olá,\n\nRecentemente ajudamos uma empresa do setor de ${setor.toLowerCase()} — perfil muito similar ao da ${company} — a:\n\n→ Eliminar 100% da fila de análise manual em 21 dias\n→ Reduzir fraude de identidade em 73%\n→ Aumentar conversão no onboarding em 18%\n\nO projeto foi ao ar em 3 semanas, sem impactar o roadmap de produto.\n\nFaz sentido eu te contar como funcionou? 20 minutos essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive Enterprise | Conviso Application Security\n(51) 99436-7667`
         }
       ],
       inmails: [
         {
-          assunto: `${company} + Certta — vale 20 minutos?`,
-          corpo: `Olá, tudo bem?\n\nVi que a ${company} tem uma operação digital expressiva no setor de ${setor.toLowerCase()} — exatamente o perfil de empresa com quem tenho trabalhado.\n\nEmpresa similar à de vocês reduziu fraudes de identidade em 73% e eliminou a análise manual no onboarding em 3 semanas após integrar a Certta. O que mais surpreendeu foi o impacto na conversão: +18% de cadastros concluídos.\n\nFaz sentido um papo de 20 minutos para eu entender como está o processo de vocês hoje?\n\nAbraço,\nAndrei Heimann | AE Enterprise · Certta`
+          assunto: `${company} + Conviso — vale 20 minutos?`,
+          corpo: `Olá, tudo bem?\n\nVi que a ${company} tem uma operação digital expressiva no setor de ${setor.toLowerCase()} — exatamente o perfil de empresa com quem tenho trabalhado.\n\nEmpresa similar à de vocês reduziu fraudes de identidade em 73% e eliminou a análise manual no onboarding em 3 semanas após integrar a Conviso Platform. O que mais surpreendeu foi o impacto na conversão: +18% de cadastros concluídos.\n\nFaz sentido um papo de 20 minutos para eu entender como está o processo de vocês hoje?\n\nAbraço,\nAndrei Heimann | AE Enterprise · Conviso Application Security`
         },
         {
           assunto: `Uma pergunta sobre fraude no onboarding`,
-          corpo: `Olá!\n\nVi o seu perfil e queria te fazer uma pergunta direta: qual é hoje o maior desafio de vocês na validação de identidade — é acurácia do liveness, custo operacional da análise manual, ou compliance regulatório?\n\nPergunto porque dependendo da resposta, posso te mostrar como empresas similares resolveram isso com a Certta em menos de 30 dias.\n\nVale um papo rápido?`
+          corpo: `Olá!\n\nVi o seu perfil e queria te fazer uma pergunta direta: qual é hoje o maior desafio de vocês na segurança de aplicações — cobertura do pipeline, gestão de vulnerabilidades, ou compliance com clientes e reguladores?\n\nPergunto porque dependendo da resposta, posso te mostrar como empresas similares resolveram isso com a Conviso Platform em menos de 30 dias.\n\nVale um papo rápido?`
         },
         {
           assunto: `Vi que a ${company} está crescendo — parabéns`,
@@ -454,14 +792,14 @@ function buildAccountData(company, searchResults) {
         }
       ],
       whatsapps: [
-        `Oi [Nome], tudo bem? Sou o Andrei da Certta — trabalhamos com prevenção a fraude de identidade no onboarding para empresas de ${setor.toLowerCase()}. Vi que a ${company} tem uma operação relevante nesse sentido. Valeria um papo rápido de 15 minutos essa semana? Te mando um Loom explicando o contexto antes.`,
-        `Oi [Nome]! Andrei, da Certta. Direto ao ponto: empresa similar à ${company} reduziu 73% das fraudes no onboarding e zerou a análise manual em 3 semanas. Tenho um case rápido que vale você ver. Posso te mandar?`,
-        `Oi [Nome], Andrei da Certta. Você é a pessoa certa para falar sobre prevenção a fraude no onboarding da ${company}? Se sim, tenho algo relevante para te mostrar — 15 minutos essa semana. Se não for você, quem seria o contato certo?`
+        `Oi [Nome], tudo bem? Sou o Andrei da Conviso Application Security — trabalhamos com segurança de aplicações integrada ao pipeline de desenvolvimento para empresas de ${setor.toLowerCase()}. Vi que a ${company} tem uma operação relevante nesse sentido. Valeria um papo rápido de 15 minutos essa semana? Te mando um Loom explicando o contexto antes.`,
+        `Oi [Nome]! Andrei, da Conviso Application Security. Direto ao ponto: empresa similar à ${company} reduziu 73% das fraudes no onboarding e zerou a análise de segurança no pipeline em 2 semanas. Tenho um case rápido que vale você ver. Posso te mandar?`,
+        `Oi [Nome], Andrei da Conviso Application Security. Você é a pessoa certa para falar sobre segurança de aplicações da ${company}? Se sim, tenho algo relevante para te mostrar — 15 minutos essa semana. Se não for você, quem seria o contato certo?`
       ],
       cold_calls: [
-        `"Bom dia [Nome], aqui é o Andrei da Certta. Tenho 30 segundos? [pausa] Perfeito. Trabalho com prevenção a fraude de identidade no onboarding para empresas de ${setor.toLowerCase()} — e a ${company} tem exatamente o perfil de empresa com quem a gente gera mais resultado. Recentemente ajudamos [empresa similar] a reduzir 73% das fraudes e eliminar a fila manual em 3 semanas. Faz sentido eu te mostrar como funcionou? Quando você tem 20 minutos essa semana?"`,
-        `"[Nome], bom dia! Andrei da Certta. Vou ser direto — ligo porque a ${company} apareceu no nosso radar como uma empresa com operação digital relevante em ${setor.toLowerCase()}, e esse é exatamente o perfil onde a gente mais entrega resultado. Uma pergunta rápida: hoje vocês usam alguma solução de liveness ou validação biométrica no onboarding? [ouvir resposta] Interessante. E quando uma análise não é conclusiva, como vocês lidam com isso hoje?"`,
-        `"Oi [Nome], aqui é o Andrei da Certta. Tudo bem? Olha, sei que você recebe muita ligação — então vou ser rápido. Tenho um case de uma empresa do setor de ${setor.toLowerCase()} que é muito parecido com o cenário de vocês, e o resultado foi bastante expressivo. Vale 2 minutos agora ou prefere que eu ligue amanhã numa hora melhor?"`
+        `"Bom dia [Nome], aqui é o Andrei da Conviso Application Security. Tenho 30 segundos? [pausa] Perfeito. Trabalho com segurança de aplicações integrada ao pipeline de desenvolvimento para empresas de ${setor.toLowerCase()} — e a ${company} tem exatamente o perfil de empresa com quem a gente gera mais resultado. Recentemente ajudamos [empresa similar] a reduzir 73% das fraudes e eliminar a fila de vulnerabilidades em 3 semanas. Faz sentido eu te mostrar como funcionou? Quando você tem 20 minutos essa semana?"`,
+        `"[Nome], bom dia! Andrei da Conviso Application Security. Vou ser direto — ligo porque a ${company} apareceu no nosso radar como uma empresa com operação digital relevante em ${setor.toLowerCase()}, e esse é exatamente o perfil onde a gente mais entrega resultado. Uma pergunta rápida: hoje vocês usam alguma solução de SAST, DAST ou análise de segurança no pipeline de desenvolvimento? [ouvir resposta] Interessante. E quando uma vulnerabilidade crítica é encontrada, qual é o processo de priorização e correção?"`,
+        `"Oi [Nome], aqui é o Andrei da Conviso Application Security. Tudo bem? Olha, sei que você recebe muita ligação — então vou ser rápido. Tenho um case de uma empresa do setor de ${setor.toLowerCase()} que é muito parecido com o cenário de vocês, e o resultado foi bastante expressivo. Vale 2 minutos agora ou prefere que eu ligue amanhã numa hora melhor?"`
       ],
       perguntas_spin: [
         "SITUAÇÃO: Como está estruturado hoje o processo de validação de identidade no onboarding — é manual, automatizado ou híbrido?",
@@ -481,12 +819,12 @@ function buildAccountData(company, searchResults) {
       ],
       objecoes: [
         { objecao: "Já temos um provedor de liveness contratado", resposta: "Faz sentido. Quando vence o contrato atual? O que mais me interessa é entender se o provedor está dando conta do volume e da sofisticação das fraudes hoje — especialmente deepfake. Posso estruturar uma POC comparativa com dados reais de vocês, sem custo, para terem um benchmark concreto antes da próxima renovação." },
-        { objecao: "Não temos budget aprovado para isso agora", resposta: "Entendo. Antes de fecharmos esse assunto: qual é o custo estimado das fraudes não detectadas por mês, somado ao custo da equipe de análise manual? Na maioria dos cases que fechamos, o ROI da Certta cobre o investimento no primeiro trimestre — o que torna a conversa com o CFO mais simples de conduzir." },
-        { objecao: "Nossa TI não tem capacidade de integração agora", resposta: "Esse ponto aparece bastante. A integração da Certta via API leva em média 3 semanas e é conduzida inteiramente pelo nosso time de CS — o esforço da engenharia de vocês é mínimo. Posso começar com um piloto em ambiente de staging para validarem isso sem comprometer o roadmap." },
+        { objecao: "Não temos budget aprovado para isso agora", resposta: "Entendo. Antes de fecharmos esse assunto: qual é o custo estimado das fraudes não detectadas por mês, somado ao custo da equipe de análise manual? Na maioria dos cases que fechamos, o ROI da Conviso Application Security cobre o investimento no primeiro trimestre — o que torna a conversa com o CFO mais simples de conduzir." },
+        { objecao: "Nossa TI não tem capacidade de integração agora", resposta: "Esse ponto aparece bastante. A integração da Conviso Application Security via API leva em média 3 semanas e é conduzida inteiramente pelo nosso time de CS — o esforço da engenharia de vocês é mínimo. Posso começar com um piloto em ambiente de staging para validarem isso sem comprometer o roadmap." },
         { objecao: "Precisamos avaliar outras soluções antes", resposta: "Faz todo sentido. Quais são os critérios principais que vocês estão avaliando? Dependendo do que for prioritário — acurácia contra deepfake, velocidade de integração, compliance regulatório ou custo por transação — posso já trazer um comparativo direto no próximo papo." },
         { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Entendo. Me conta: o volume de fraudes está estável ou vocês estão vendo crescimento? Se estiver crescendo, normalmente esse tema sobe de prioridade mais rápido do que os gestores antecipam — e vale a pena já ter avaliado uma solução antes da urgência chegar." },
-        { objecao: "Já tentamos soluções similares e não funcionou", resposta: "Que experiência foi essa? O que não funcionou — foi acurácia, integração técnica ou adoção interna? Pergunto porque dependendo do motivo, posso te mostrar exatamente como a Certta resolve esse ponto específico, com cases de empresas que vieram de situação similar." },
-        { objecao: "Precisamos envolver o jurídico e compliance antes", resposta: "Perfeito — é exatamente o caminho certo. A Certta tem documentação completa de compliance, certificações ISO 27001, e mapeamento regulatório específico para o seu setor. Posso preparar um material técnico-jurídico para facilitar essa avaliação interna. Quem seria a pessoa ideal para incluir nessa conversa?" },
+        { objecao: "Já tentamos soluções similares e não funcionou", resposta: "Que experiência foi essa? O que não funcionou — foi acurácia, integração técnica ou adoção interna? Pergunto porque dependendo do motivo, posso te mostrar exatamente como a Conviso Platform resolve esse ponto específico, com cases de empresas que vieram de situação similar." },
+        { objecao: "Precisamos envolver o jurídico e compliance antes", resposta: "Perfeito — é exatamente o caminho certo. A Conviso tem documentação completa de compliance, certificações ISO 27001, e mapeamento regulatório específico para o seu setor. Posso preparar um material técnico-jurídico para facilitar essa avaliação interna. Quem seria a pessoa ideal para incluir nessa conversa?" },
         { objecao: "Nosso produto vai mudar em breve e não é hora de integrar", resposta: "Faz sentido querer estabilidade antes de adicionar uma camada nova. Me ajuda a entender: a mudança impacta o fluxo de onboarding? Às vezes é exatamente durante uma redesign que faz mais sentido incluir uma solução nova — evita retrabalho depois. Vale ao menos mapear isso juntos?" }
       ],
       tier
@@ -510,7 +848,6 @@ function buildAccountData(company, searchResults) {
       prazo: "Primeira abordagem em até 48 horas — prioridade máxima se Tier 1"
     }
   };
-}
 
 // ─── VISUAL COMPONENTS ────────────────────────────────────────────────────────
 function ScoreGauge({score}) {
@@ -557,15 +894,15 @@ function MEDDPICCCard({data}) {
           <div style={{fontSize:11.5,color:"#64748b"}}>Score de maturidade do deal baseado nos dados mapeados</div>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:28,fontWeight:800,color:avg>=7?"#10b981":avg>=5?"#fbbf24":"#f87171",lineHeight:1}}>{avg}</div>
+          <div style={{fontSize:28,fontWeight:800,color:avg>=7?"#065f46":avg>=5?"#92400e":"#991b1b",lineHeight:1}}>{avg}</div>
           <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>/ 10</div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
         {Object.entries(m).map(([k,v])=>{
-          const c = v>=7?"#10b981":v>=5?"#fbbf24":"#f87171";
-          const bg = v>=7?"rgba(16,185,129,.08)":v>=5?"rgba(251,191,36,.08)":"rgba(248,113,113,.08)";
-          const border = v>=7?"rgba(16,185,129,.25)":v>=5?"rgba(251,191,36,.2)":"rgba(248,113,113,.2)";
+          const c = v>=7?"#10b981":v>=5?"#f59e0b":"#ef4444";
+          const bg = v>=7?"#dcfce7":v>=5?"#fef3c7":"#fee2e2";
+          const border = v>=7?"#10b981":v>=5?"#f59e0b":"#ef4444";
           return (
             <div key={k} style={{background:bg,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1px solid ${border}`,transition:"transform .2s"}}>
               <div style={{fontSize:18,fontWeight:800,color:c,lineHeight:1,marginBottom:4}}>{v}</div>
@@ -590,7 +927,7 @@ function TriggerTimeline({triggers}) {
         <div style={{position:"absolute",left:8,top:8,bottom:8,width:2,background:"linear-gradient(180deg,#10b981 0%,rgba(16,185,129,.1) 100%)",borderRadius:2}}/>
         {safeArr(triggers).map((t,i)=>(
           <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10,position:"relative",animation:`fadeSlide .4s ease ${i*0.08}s both`}}>
-            <div style={{position:"absolute",left:-20,top:8,width:12,height:12,borderRadius:"50%",background:i===0?"#10b981":"#1e293b",border:`2px solid ${i===0?"#10b981":i===1?"#fbbf24":"#2d3a52"}`,boxShadow:i===0?"0 0 12px rgba(16,185,129,.5)":"none",flexShrink:0}}/>
+            <div style={{position:"absolute",left:-20,top:8,width:12,height:12,borderRadius:"50%",background:i===0?"#10b981":"#e2e8f0",border:`2px solid ${i===0?"#10b981":i===1?"#f59e0b":"#cbd5e1"}`,boxShadow:i===0?"0 0 12px rgba(16,185,129,.5)":"none",flexShrink:0}}/>
             <div style={{background:i===0?"rgba(16,185,129,.08)":"#141c2e",border:`1px solid ${i===0?"rgba(16,185,129,.3)":"#2a3650"}`,borderRadius:10,padding:"9px 13px",fontSize:12.5,color:"#334155",lineHeight:1.5,flex:1}}>
               {t}
               {i===0&&<span style={{marginLeft:8,fontSize:8,color:"#10b981",fontWeight:700,letterSpacing:1,textTransform:"uppercase",background:"rgba(16,185,129,.12)",padding:"2px 7px",borderRadius:20}}>ATIVO</span>}
@@ -605,11 +942,11 @@ function TriggerTimeline({triggers}) {
 function CompetitorCard({competidores}) {
   if (!safeArr(competidores).length) return null;
   return (
-    <div style={{background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.2)",borderRadius:14,padding:"14px 18px",marginBottom:16}}>
-      <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#fbbf24",marginBottom:10}}>Provedores Concorrentes Prováveis</div>
+    <div style={{background:"#fffbeb",border:"1.5px solid #f59e0b",borderRadius:14,padding:"14px 18px",marginBottom:16}}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#92400e",marginBottom:10}}>Provedores Concorrentes Prováveis</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
         {competidores.map((c,i)=>(
-          <span key={i} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.25)",borderRadius:8,padding:"5px 12px",fontSize:11.5,color:"#fbbf24",fontWeight:600}}>{c}</span>
+          <span key={i} style={{background:"#fef3c7",border:"1px solid #f59e0b",borderRadius:8,padding:"5px 12px",fontSize:11.5,color:"#92400e",fontWeight:600}}>{c}</span>
         ))}
       </div>
       <div style={{fontSize:10.5,color:"#94a3b8",marginTop:10}}>Use como referência para posicionamento competitivo na discovery. Pergunte qual desses está sendo avaliado ou já é utilizado.</div>
@@ -699,7 +1036,7 @@ export default function App() {
 
     // Digital transformation signals
     if (/digital|tecnologia|plataforma|app|aplicativo|onboarding/.test(text)) {
-      destaques.push("Iniciativas de transformação digital mencionadas — abre caminho para posicionamento da Certta como parceira estratégica");
+      destaques.push("Iniciativas de transformação digital mencionadas — abre caminho para posicionamento da Conviso Application Security como parceira estratégica");
       oportunidades.push("Agenda digital ativa indica abertura para novas soluções de identidade e autenticação");
     }
 
@@ -719,7 +1056,7 @@ export default function App() {
     // Investment / M&A signals
     if (/investimento|rodada|aquisição|fusão|parceria estratégica|captação/.test(text)) {
       triggersDocs.push("Movimentos de M&A ou captação identificados — momento de maior rigor em due diligence e KYB");
-      oportunidades.push("Transações corporativas exigem validação robusta de identidade de sócios e parceiros — use cases de KYB da Certta se aplicam diretamente");
+      oportunidades.push("Transações corporativas exigem validação robusta de identidade de sócios e parceiros — use cases de KYB da Conviso Application Security se aplicam diretamente");
     }
 
     // People / org signals
@@ -730,7 +1067,7 @@ export default function App() {
     // Product launch signals
     if (/lançamento|novo produto|produto digital|serviço digital/.test(text)) {
       triggersDocs.push("Lançamento de novo produto ou serviço digital identificado — janela ideal para integrar identidade digital desde o início");
-      oportunidades.push("Novos produtos digitais precisam de onboarding seguro desde o MVP — posicionar Certta antes do lançamento é o momento mais estratégico");
+      oportunidades.push("Novos produtos digitais precisam de onboarding seguro desde o MVP — posicionar Conviso antes do lançamento é o momento mais estratégico");
     }
 
     // Risk / concern section
@@ -746,7 +1083,7 @@ export default function App() {
       oportunidades.push("Utilize o documento como base para personalizar a abordagem com dados internos da empresa — aumenta significativamente a taxa de resposta");
     }
     if (!triggersDocs.length) {
-      triggersDocs.push("Revise o documento em busca de menções a crescimento, novos produtos, compliance ou expansão — esses são os principais gatilhos para a abordagem Certta");
+      triggersDocs.push("Revise o documento em busca de menções a crescimento, novos produtos, compliance ou expansão — esses são os principais gatilhos para a abordagem Conviso");
     }
 
     return {
@@ -897,7 +1234,7 @@ export default function App() {
     w.document.write(`<!DOCTYPE html><html><head><title>Account Map - ${data?.empresa?.nome}</title>
     <style>body{font-family:Verdana,sans-serif;padding:32px;color:#0f172a;font-size:12px;line-height:1.7}h1{font-size:22px;margin-bottom:4px;font-weight:800}h2{font-size:10px;font-weight:700;margin:18px 0 8px;border-bottom:2px solid #e2e8f0;padding-bottom:4px;text-transform:uppercase;letter-spacing:1.5px;color:#475569}.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px}ul{list-style:none;padding:0}li{padding:4px 0 4px 14px;position:relative;color:#334155}li:before{content:"→";position:absolute;left:0;color:#22c55e}.msg{background:#f8fafc;border-left:3px solid #22c55e;padding:12px;white-space:pre-wrap;margin:8px 0;font-size:11.5px;border-radius:0 6px 6px 0}.sk{border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px}.tag{display:inline-block;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px;margin:2px;font-size:10px}.footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px;font-size:10px;color:#94a3b8}</style>
     </head><body>${reportRef.current.innerHTML}
-    <div class="footer">Account Mapper Pro V2 · Andrei Heimann · Certta · ${new Date().toLocaleDateString("pt-BR")}</div>
+    <div class="footer">Account Mapper Pro V2 · Andrei Heimann · Conviso Application Security · ${new Date().toLocaleDateString("pt-BR")}</div>
     </body></html>`);
     w.document.close(); setTimeout(()=>w.print(),500);
   }
@@ -1098,7 +1435,7 @@ export default function App() {
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
                   <div style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.3)",borderRadius:12,padding:"9px 16px",fontSize:12.5,color:"#10b981",fontWeight:700}}>
                     ✓ {batchList.length} empresa{batchList.length>1?"s":""} carregada{batchList.length>1?"s":""}
-                    {batchList.length>BATCH_LIMIT&&<span style={{color:"#fbbf24"}}> — processando as primeiras {BATCH_LIMIT}</span>}
+                    {batchList.length>BATCH_LIMIT&&<span style={{color:"#92400e"}}> — processando as primeiras {BATCH_LIMIT}</span>}
                   </div>
                   <button className="btn3" style={{fontSize:11}} onClick={()=>{setBatchList([]);setBatchResults([]);setSelectedBatch(null);setData(null);}}>× Limpar</button>
                   <button className="btn" onClick={runBatch} disabled={loading}>{loading?"Processando...":"Analisar Lote →"}</button>
@@ -1133,7 +1470,7 @@ export default function App() {
               <div className="ct">Painel Consolidado do Lote</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:22}}>
                 {[["Total Analisadas",consolidated.total,"#10b981"],["Fit Alto",consolidated.byScore.ALTO,"#10b981"],["Fit Médio",consolidated.byScore.MEDIO,"#fbbf24"],["Fit Baixo",consolidated.byScore.BAIXO,"#f87171"],["Tier 1",consolidated.byTier["Tier 1"].length,"#10b981"],["Tier 2",consolidated.byTier["Tier 2"].length,"#fbbf24"]].map(([l,v,c])=>(
-                  <div key={l} style={{background:"linear-gradient(145deg,#141c2e,#0f1626)",borderRadius:14,padding:"16px 12px",textAlign:"center",border:`1px solid rgba(45,58,82,.8)`}}>
+                  <div key={l} style={{background:"#ffffff",borderRadius:14,padding:"16px 12px",textAlign:"center",border:"1.5px solid #e8edf4",boxShadow:"0 2px 8px rgba(15,23,42,.06)"}}>
                     <div style={{fontSize:30,fontWeight:800,color:c,lineHeight:1,textShadow:`0 0 20px ${c}44`}}>{v}</div>
                     <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginTop:5}}>{l}</div>
                   </div>
@@ -1185,9 +1522,9 @@ export default function App() {
               <p style={{marginBottom:16,lineHeight:1.7}}>{safeData.empresa?.resumo}</p>
               <div className="g2">
                 <div className="card"><h2>Dados da Empresa</h2><ul>{[["Faturamento",safeData.empresa?.faturamento],["Tamanho",safeData.empresa?.tamanho],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa]].map(([k,v])=>v&&<li key={k}><b>{k}:</b> {v}</li>)}</ul></div>
-                <div className="card"><h2>Fit Certta — {safeData.fit?.score}</h2><p>{safeData.fit?.justificativa}</p></div>
+                <div className="card"><h2>Fit Conviso — {safeData.fit?.score}</h2><p>{safeData.fit?.justificativa}</p></div>
               </div>
-              <h2>Soluções Certta Aplicáveis</h2><div>{safeArr(safeData.fit?.solucoes_certta).map((s,i)=><span key={i} className="tag">{s}</span>)}</div>
+              <h2>Soluções Conviso Aplicáveis</h2><div>{safeArr(safeData.fit?.solucoes_conviso).map((s,i)=><span key={i} className="tag">{s}</span>)}</div>
               <h2>Use Cases</h2><ul>{safeArr(safeData.fit?.use_cases).map((u,i)=><li key={i}>{u}</li>)}</ul>
               <h2>Dores Mapeadas</h2><ul>{safeArr(safeData.dores?.principais).map((d,i)=><li key={i}>{d}</li>)}</ul>
               <h2>Exposição Regulatória</h2><ul>{safeArr(safeData.dores?.exposicao_regulatoria).map((r,i)=><li key={i}>{r}</li>)}</ul>
@@ -1245,11 +1582,11 @@ export default function App() {
             {/* FIT + USE CASES */}
             <div className="g2" style={{marginBottom:0}}>
               <div className="card" style={{borderColor:ss?.border+"55"}}>
-                <div className="ct">Fit Certta</div>
+                <div className="ct">Fit Conviso</div>
                 <div style={{fontSize:12.5,lineHeight:1.75,marginBottom:16,color:"#334155"}}>{safeData.fit?.justificativa}</div>
                 <div style={{marginBottom:8}}>
-                  <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Aplicáveis</div>
-                  {safeArr(safeData.fit?.solucoes_certta).map((s,i)=>(
+                  <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Conviso</div>
+                  {safeArr(safeData.fit?.solucoes_conviso).map((s,i)=>(
                     <span key={i} className="pill" style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.28)",color:"#10b981"}}>{s}</span>
                   ))}
                 </div>
@@ -1281,9 +1618,9 @@ export default function App() {
                 ))}
                 {safeArr(safeData.dores?.exposicao_regulatoria).length>0&&(
                   <div style={{marginTop:14}}>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#fbbf24",marginBottom:8}}>Exposição Regulatória</div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#92400e",marginBottom:8}}>Exposição Regulatória</div>
                     {safeArr(safeData.dores?.exposicao_regulatoria).map((r,i)=>(
-                      <span key={i} className="pill" style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.28)",color:"#fbbf24"}}>{r}</span>
+                      <span key={i} className="pill" style={{background:"#fef3c7",border:"1px solid #f59e0b",color:"#92400e"}}>{r}</span>
                     ))}
                   </div>
                 )}
@@ -1333,7 +1670,7 @@ export default function App() {
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",marginLeft:8,flexShrink:0}}>
                             <span style={{background:"rgba(16,185,129,.12)",border:"1px solid rgba(16,185,129,.3)",color:"#10b981",borderRadius:6,padding:"2px 8px",fontSize:8,fontWeight:700}}>{(contact.source||"").split(" ")[0]}</span>
-                            {contact.is_senior&&<span style={{fontSize:8,color:"#fbbf24",fontWeight:700}}>DECISOR</span>}
+                            {contact.is_senior&&<span style={{fontSize:8,color:"#92400e",fontWeight:700}}>DECISOR</span>}
                           </div>
                         </div>
                         <div style={{display:"flex",flexDirection:"column",gap:5}}>
@@ -1375,7 +1712,7 @@ export default function App() {
               )}
               {enriched&&safeArr(enriched.contacts).length===0&&(
                 <div style={{background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.15)",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:12,color:"#64748b",lineHeight:1.6}}>
-                  <span style={{color:"#fbbf24",fontWeight:700}}>Nenhum contato encontrado via API.</span>
+                  <span style={{color:"#92400e",fontWeight:700}}>Nenhum contato encontrado via API.</span>
                   <div style={{fontSize:10.5,color:"#94a3b8",marginTop:6}}>Configure HUNTER_API_KEY e APOLLO_API_KEY na Vercel para ativar o organograma real.</div>
                 </div>
               )}
@@ -1386,7 +1723,7 @@ export default function App() {
                 {safeArr(safeData.stakeholders).map((s,i)=>{
                   const pk=prioKey(s.prioridade);
                   const pc=prioColors[pk]||"#64748b";
-                  const urgColor=s.urgencia==="Alta"?"#f87171":s.urgencia==="Média"?"#fbbf24":"#64748b";
+                  const urgColor=s.urgencia==="Alta"?"#991b1b":s.urgencia==="Média"?"#92400e":"#64748b";
                   const matched=safeArr(enriched?.contacts).find(c=>
                     s.cargo.split("/")[0].trim().toLowerCase().split(" ").some(w=>w.length>3&&c.cargo?.toLowerCase().includes(w))
                   );
@@ -1429,7 +1766,7 @@ export default function App() {
 
             {/* CONTEÚDO ADICIONAL ANEXADO */}
             {safeData.contexto_documento && (
-              <div className="card" style={{border:"1px solid rgba(125,211,252,.3)",background:"linear-gradient(145deg,#0f1e30,#0a1828)"}}>
+              <div className="card" style={{border:"1.5px solid #bfdbfe",background:"#f0f9ff"}}>
                 <div className="ct" style={{color:"#7dd3fc"}}>📎 Análise Estratégica — Documento Anexado</div>
                 <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
                   <span className="pill" style={{background:"rgba(125,211,252,.1)",border:"1px solid rgba(125,211,252,.3)",color:"#7dd3fc"}}>{safeData.contexto_documento.tipo}</span>
@@ -1446,10 +1783,10 @@ export default function App() {
                     ))}
                   </div>
                   <div>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#fbbf24",textTransform:"uppercase",marginBottom:10}}>Gatilhos Identificados no Doc.</div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#92400e",textTransform:"uppercase",marginBottom:10}}>Gatilhos Identificados no Doc.</div>
                     {safeArr(safeData.contexto_documento.triggers_identificados).map((t,i)=>(
                       <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#334155",lineHeight:1.5}}>
-                        <span style={{color:"#fbbf24",flexShrink:0}}>⚡</span>{t}
+                        <span style={{color:"#92400e",flexShrink:0}}>⚡</span>{t}
                       </div>
                     ))}
                   </div>
@@ -1493,7 +1830,7 @@ export default function App() {
                 emails:    { label:"E-mail", icon:"✉️", color:"#7dd3fc", bg:"rgba(125,211,252,.1)", border:"rgba(125,211,252,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
                 inmails:   { label:"InMail — LinkedIn", icon:"💼", color:"#10b981", bg:"rgba(16,185,129,.1)", border:"rgba(16,185,129,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
                 whatsapps: { label:"WhatsApp", icon:"💬", color:"#4ade80", bg:"rgba(74,222,128,.1)", border:"rgba(74,222,128,.3)", isObj:false },
-                cold_calls:{ label:"Cold Call — Abertura", icon:"📞", color:"#fbbf24", bg:"rgba(251,191,36,.1)", border:"rgba(251,191,36,.3)", isObj:false }
+                cold_calls:{ label:"Cold Call — Abertura", icon:"📞", color:"#92400e", bg:"#fef3c7", border:"#f59e0b", isObj:false }
               };
               const cfg = configs[canal];
               const items = safeArr(safeData.estrategia?.[canal]);
@@ -1506,7 +1843,7 @@ export default function App() {
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:14}}>
                     {items.map((item,i)=>(
-                      <div key={i} style={{background:"linear-gradient(145deg,#141c2e,#0f1626)",border:`1px solid ${cfg.border}`,borderRadius:12,overflow:"hidden"}}>
+                      <div key={i} style={{background:"#ffffff",border:`1.5px solid ${cfg.border}`,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 8px rgba(15,23,42,.05)"}}>
                         <div style={{padding:"8px 14px",background:cfg.bg,borderBottom:`1px solid ${cfg.border}`,display:"flex",alignItems:"center",gap:8}}>
                           <span style={{fontSize:10,fontWeight:700,color:cfg.color,letterSpacing:.5}}>Template {i+1}</span>
                           {cfg.isObj && item[cfg.keyAssunto] && (
@@ -1529,7 +1866,7 @@ export default function App() {
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=>{
                   const tipo = q.startsWith("SITUAÇÃO")?"S":q.startsWith("PROBLEMA")?"P":q.startsWith("IMPLICAÇÃO")?"I":"N";
-                  const tcolor = tipo==="S"?"#7dd3fc":tipo==="P"?"#fbbf24":tipo==="I"?"#f87171":"#10b981";
+                  const tcolor = tipo==="S"?"#0ea5e9":tipo==="P"?"#92400e":tipo==="I"?"#991b1b":"#065f46";
                   return (
                     <div key={i} className="spinq" style={{animation:`fadeSlide .3s ease ${i*0.04}s both`,alignItems:"flex-start"}}>
                       <span style={{background:tcolor+"20",border:`1px solid ${tcolor}40`,color:tcolor,borderRadius:6,padding:"1px 7px",fontSize:9,fontWeight:800,flexShrink:0,marginTop:1}}>{tipo}</span>
@@ -1546,7 +1883,7 @@ export default function App() {
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {safeArr(safeData.estrategia?.objecoes).map((o,i)=>(
                   <div key={i} className="obj" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
-                    <div style={{fontSize:11.5,color:"#fbbf24",fontWeight:700,marginBottom:8,lineHeight:1.4}}>"{o.objecao}"</div>
+                    <div style={{fontSize:11.5,color:"#92400e",fontWeight:700,marginBottom:8,lineHeight:1.4}}>"{o.objecao}"</div>
                     <div style={{fontSize:12,color:"#334155",lineHeight:1.65}}>→ {o.resposta}</div>
                   </div>
                 ))}
@@ -1570,12 +1907,12 @@ export default function App() {
                 </div>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:"#fbbf24",boxShadow:"0 0 8px rgba(251,191,36,.6)"}}/>
-                    <div style={{fontSize:9,color:"#fbbf24",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase"}}>BDR — Ações de Suporte</div>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",boxShadow:"0 0 8px rgba(245,158,11,.4)"}}/>
+                    <div style={{fontSize:9,color:"#92400e",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase"}}>BDR — Ações de Suporte</div>
                   </div>
                   {safeArr(safeData.proximos_passos?.bdr).map((a,i)=>(
                     <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
-                      <span style={{color:"#fbbf24",fontSize:11,flexShrink:0,marginTop:2}}>→</span>{a}
+                      <span style={{color:"#92400e",fontSize:11,flexShrink:0,marginTop:2}}>→</span>{a}
                     </div>
                   ))}
                 </div>
@@ -1595,7 +1932,7 @@ export default function App() {
         {/* EMPTY STATE */}
         {!data&&!loading&&(
           <div style={{textAlign:"center",padding:"64px 0",animation:"fadeUp .5s ease"}}>
-            <div style={{width:72,height:72,background:"linear-gradient(145deg,#1a2438,#141c2e)",border:"1px solid #e8edf4",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
+            <div style={{width:72,height:72,background:"#ffffff",border:"1.5px solid #e8edf4",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",boxShadow:"0 4px 24px rgba(15,23,42,.08)"}}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="9" stroke="#2d3a52" strokeWidth="1.8"/>
                 <circle cx="12" cy="12" r="5" stroke="#3a4762" strokeWidth="1.8"/>
