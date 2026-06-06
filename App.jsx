@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from "react";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const scoreColors = {
-  ALTO:  { bg: "rgba(52,211,153,.15)",  border: "#34d399", text: "#34d399", hex: "#34d399", glow: "rgba(52,211,153,.3)" },
+  ALTO:  { bg: "rgba(16,185,129,.15)",  border: "#10b981", text: "#10b981", hex: "#10b981", glow: "rgba(16,185,129,.3)" },
   MEDIO: { bg: "rgba(251,191,36,.15)",  border: "#fbbf24", text: "#fbbf24", hex: "#fbbf24", glow: "rgba(251,191,36,.3)" },
   BAIXO: { bg: "rgba(248,113,113,.15)", border: "#f87171", text: "#f87171", hex: "#f87171", glow: "rgba(248,113,113,.3)" },
 };
-const tierColors  = { "Tier 1": "#34d399", "Tier 2": "#fbbf24", "Tier 3": "#94a3b8" };
-const prioColors  = { PRIMARIO: "#34d399", SECUNDARIO: "#fbbf24", TERCIARIO: "#94a3b8" };
+const tierColors = { "Tier 1": "#10b981", "Tier 2": "#f59e0b", "Tier 3": "#94a3b8" };
+const prioColors  = { PRIMARIO: "#10b981", SECUNDARIO: "#fbbf24", TERCIARIO: "#94a3b8" };
 const BATCH_LIMIT = 15;
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -531,7 +531,7 @@ function ScoreGauge({score}) {
             <stop offset="100%" stopColor={ss.hex}/>
           </linearGradient>
         </defs>
-        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke="#1a2438" strokeWidth="10" strokeLinecap="round"/>
+        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke="#f1f5f9" strokeWidth="10" strokeLinecap="round"/>
         <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`} fill="none" stroke="url(#gaugeGrad)" strokeWidth="10" strokeLinecap="round"
           strokeDasharray={`${circumference} ${circumference}`} strokeDashoffset={offset}
           style={{transition:"stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1)",filter:`drop-shadow(0 0 8px ${ss.glow})`}}/>
@@ -554,22 +554,22 @@ function MEDDPICCCard({data}) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div>
           <div className="ct" style={{marginBottom:4}}>Qualificação MEDDPICC</div>
-          <div style={{fontSize:11.5,color:"#a3b1c9"}}>Score de maturidade do deal baseado nos dados mapeados</div>
+          <div style={{fontSize:11.5,color:"#64748b"}}>Score de maturidade do deal baseado nos dados mapeados</div>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:28,fontWeight:800,color:avg>=7?"#34d399":avg>=5?"#fbbf24":"#f87171",lineHeight:1}}>{avg}</div>
+          <div style={{fontSize:28,fontWeight:800,color:avg>=7?"#10b981":avg>=5?"#fbbf24":"#f87171",lineHeight:1}}>{avg}</div>
           <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>/ 10</div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
         {Object.entries(m).map(([k,v])=>{
-          const c = v>=7?"#34d399":v>=5?"#fbbf24":"#f87171";
-          const bg = v>=7?"rgba(52,211,153,.08)":v>=5?"rgba(251,191,36,.08)":"rgba(248,113,113,.08)";
-          const border = v>=7?"rgba(52,211,153,.25)":v>=5?"rgba(251,191,36,.2)":"rgba(248,113,113,.2)";
+          const c = v>=7?"#10b981":v>=5?"#fbbf24":"#f87171";
+          const bg = v>=7?"rgba(16,185,129,.08)":v>=5?"rgba(251,191,36,.08)":"rgba(248,113,113,.08)";
+          const border = v>=7?"rgba(16,185,129,.25)":v>=5?"rgba(251,191,36,.2)":"rgba(248,113,113,.2)";
           return (
             <div key={k} style={{background:bg,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1px solid ${border}`,transition:"transform .2s"}}>
               <div style={{fontSize:18,fontWeight:800,color:c,lineHeight:1,marginBottom:4}}>{v}</div>
-              <div style={{fontSize:8,color:"#7d8ca8",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{labels[k]}</div>
+              <div style={{fontSize:8,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{labels[k]}</div>
               <div style={{height:3,background:"#232f47",borderRadius:3,overflow:"hidden"}}>
                 <div style={{height:"100%",width:animated?`${v*10}%`:"0%",background:c,borderRadius:3,transition:"width 1s cubic-bezier(.22,1,.36,1) "+Object.keys(m).indexOf(k)*0.05+"s"}}/>
               </div>
@@ -587,13 +587,13 @@ function TriggerTimeline({triggers}) {
     <div className="card">
       <div className="ct">Timeline de Gatilhos Comerciais</div>
       <div style={{position:"relative",paddingLeft:24}}>
-        <div style={{position:"absolute",left:8,top:8,bottom:8,width:2,background:"linear-gradient(180deg,#34d399 0%,rgba(52,211,153,.1) 100%)",borderRadius:2}}/>
+        <div style={{position:"absolute",left:8,top:8,bottom:8,width:2,background:"linear-gradient(180deg,#10b981 0%,rgba(16,185,129,.1) 100%)",borderRadius:2}}/>
         {safeArr(triggers).map((t,i)=>(
           <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10,position:"relative",animation:`fadeSlide .4s ease ${i*0.08}s both`}}>
-            <div style={{position:"absolute",left:-20,top:8,width:12,height:12,borderRadius:"50%",background:i===0?"#34d399":"#1e293b",border:`2px solid ${i===0?"#34d399":i===1?"#fbbf24":"#2d3a52"}`,boxShadow:i===0?"0 0 12px rgba(52,211,153,.5)":"none",flexShrink:0}}/>
-            <div style={{background:i===0?"rgba(52,211,153,.08)":"#141c2e",border:`1px solid ${i===0?"rgba(52,211,153,.3)":"#2a3650"}`,borderRadius:10,padding:"9px 13px",fontSize:12.5,color:"#e2e8f0",lineHeight:1.5,flex:1}}>
+            <div style={{position:"absolute",left:-20,top:8,width:12,height:12,borderRadius:"50%",background:i===0?"#10b981":"#1e293b",border:`2px solid ${i===0?"#10b981":i===1?"#fbbf24":"#2d3a52"}`,boxShadow:i===0?"0 0 12px rgba(16,185,129,.5)":"none",flexShrink:0}}/>
+            <div style={{background:i===0?"rgba(16,185,129,.08)":"#141c2e",border:`1px solid ${i===0?"rgba(16,185,129,.3)":"#2a3650"}`,borderRadius:10,padding:"9px 13px",fontSize:12.5,color:"#334155",lineHeight:1.5,flex:1}}>
               {t}
-              {i===0&&<span style={{marginLeft:8,fontSize:8,color:"#34d399",fontWeight:700,letterSpacing:1,textTransform:"uppercase",background:"rgba(52,211,153,.12)",padding:"2px 7px",borderRadius:20}}>ATIVO</span>}
+              {i===0&&<span style={{marginLeft:8,fontSize:8,color:"#10b981",fontWeight:700,letterSpacing:1,textTransform:"uppercase",background:"rgba(16,185,129,.12)",padding:"2px 7px",borderRadius:20}}>ATIVO</span>}
             </div>
           </div>
         ))}
@@ -612,7 +612,7 @@ function CompetitorCard({competidores}) {
           <span key={i} style={{background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.25)",borderRadius:8,padding:"5px 12px",fontSize:11.5,color:"#fbbf24",fontWeight:600}}>{c}</span>
         ))}
       </div>
-      <div style={{fontSize:10.5,color:"#7d8ca8",marginTop:10}}>Use como referência para posicionamento competitivo na discovery. Pergunte qual desses está sendo avaliado ou já é utilizado.</div>
+      <div style={{fontSize:10.5,color:"#94a3b8",marginTop:10}}>Use como referência para posicionamento competitivo na discovery. Pergunte qual desses está sendo avaliado ou já é utilizado.</div>
     </div>
   );
 }
@@ -909,85 +909,118 @@ export default function App() {
 
   const css = `
 *{box-sizing:border-box}
-@keyframes fadeSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
-@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(52,211,153,.3)}50%{box-shadow:0 0 20px rgba(52,211,153,.6)}}
-.inp{width:100%;background:#1a2438;border:1.5px solid #2d3a52;border-radius:12px;padding:13px 16px;font-size:13px;color:#f1f5f9;font-family:Verdana,sans-serif;outline:none;transition:all .25s}
-.inp:focus{border-color:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.12),0 2px 8px rgba(0,0,0,.2)}
-.inp::placeholder{color:#4a5878}
-.btn{background:linear-gradient(135deg,#34d399,#059669);color:#022c1a;border:none;border-radius:12px;padding:13px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;white-space:nowrap;box-shadow:0 4px 16px rgba(52,211,153,.3);transition:all .2s;letter-spacing:.3px}
-.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(52,211,153,.4)}
-.btn:active:not(:disabled){transform:translateY(0)}
-.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-.btn2{background:rgba(52,211,153,.12);color:#34d399;border:1.5px solid rgba(52,211,153,.35);border-radius:10px;padding:9px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;transition:all .2s}
-.btn2:hover{background:rgba(52,211,153,.2);border-color:rgba(52,211,153,.6)}
-.btn3{background:rgba(255,255,255,.03);color:#a3b1c9;border:1.5px solid #2d3a52;border-radius:10px;padding:9px 18px;font-size:11px;font-weight:700;cursor:pointer;font-family:Verdana,sans-serif;transition:all .2s}
-.btn3:hover{background:rgba(255,255,255,.07);border-color:#4a5878;color:#e2e8f0}
-.card{background:linear-gradient(145deg,#1a2438 0%,#141c2e 100%);border:1px solid #2d3a52;border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);transition:all .25s}
-.card:hover{box-shadow:0 8px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06);transform:translateY(-1px)}
-.ct{font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#34d399;margin-bottom:14px;display:flex;align-items:center;gap:6px}
-.ct::before{content:"";display:inline-block;width:3px;height:12px;background:linear-gradient(180deg,#34d399,#059669);border-radius:2px}
-.row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(35,47,71,.8);font-size:12.5px;color:#e2e8f0;line-height:1.6;transition:background .2s}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+@keyframes glowGreen{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.0),0 2px 8px rgba(16,185,129,.15)}50%{box-shadow:0 0 0 4px rgba(16,185,129,.08),0 2px 16px rgba(16,185,129,.25)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── INPUTS ── */
+.inp{width:100%;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 18px;font-size:13.5px;color:#0f172a;font-family:Inter,Verdana,sans-serif;outline:none;transition:all .2s;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.inp:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.1),0 1px 3px rgba(15,23,42,.06)}
+.inp::placeholder{color:#94a3b8}
+
+/* ── BUTTONS ── */
+.btn{background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;border-radius:12px;padding:14px 28px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,Verdana,sans-serif;white-space:nowrap;box-shadow:0 4px 14px rgba(16,185,129,.35),0 1px 3px rgba(16,185,129,.2);transition:all .2s;letter-spacing:.2px}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,185,129,.45),0 2px 6px rgba(16,185,129,.25)}
+.btn:active:not(:disabled){transform:translateY(0);box-shadow:0 2px 8px rgba(16,185,129,.3)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.btn2{background:rgba(16,185,129,.08);color:#059669;border:1.5px solid rgba(16,185,129,.25);border-radius:10px;padding:9px 18px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:Inter,Verdana,sans-serif;transition:all .2s}
+.btn2:hover{background:rgba(16,185,129,.14);border-color:rgba(16,185,129,.45);transform:translateY(-1px)}
+.btn3{background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 18px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:Inter,Verdana,sans-serif;transition:all .2s;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+.btn3:hover{background:#f1f5f9;border-color:#cbd5e1;color:#1e293b;transform:translateY(-1px)}
+
+/* ── CARDS ── */
+.card{background:#ffffff;border:1px solid #e8edf4;border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:0 2px 8px rgba(15,23,42,.06),0 0 0 0 transparent;transition:all .25s}
+.card:hover{box-shadow:0 8px 32px rgba(15,23,42,.1),0 2px 8px rgba(15,23,42,.06);transform:translateY(-2px);border-color:#d1dae8}
+
+/* ── SECTION LABELS ── */
+.ct{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#10b981;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.ct::before{content:"";display:inline-block;width:3px;height:13px;background:linear-gradient(180deg,#10b981,#059669);border-radius:3px;flex-shrink:0}
+
+/* ── ROWS ── */
+.row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;line-height:1.6;transition:all .15s}
 .row:last-child{border-bottom:none}
-.row:hover{background:rgba(52,211,153,.03);border-radius:6px;padding-left:6px}
-.sk{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:14px;padding:14px 16px;margin-bottom:10px;transition:all .25s;cursor:default}
-.sk:hover{border-color:rgba(52,211,153,.4);box-shadow:0 4px 16px rgba(52,211,153,.08);transform:translateY(-1px)}
-.msg{background:linear-gradient(145deg,#141c2e,#0f1626);border-left:3px solid #34d399;border-radius:0 12px 12px 0;padding:16px 18px;font-size:12.5px;color:#e2e8f0;white-space:pre-wrap;line-height:1.8}
-.spinq{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#e2e8f0;margin-bottom:8px;display:flex;gap:10px;line-height:1.6;transition:all .2s}
-.spinq:hover{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.04)}
-.spinq::before{content:"?";color:#34d399;font-weight:800;flex-shrink:0;font-size:14px}
-.obj{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:border-color .2s}
-.obj:hover{border-color:rgba(251,191,36,.3)}
-.news{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2a3650;border-radius:14px;padding:14px 16px;margin-bottom:10px;transition:all .2s}
-.news:hover{border-color:rgba(52,211,153,.35);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10.5px;font-weight:700;margin:3px;letter-spacing:.3px}
-.dot{width:9px;height:9px;border-radius:50%;background:#34d399;animation:pulse 1.2s ease-in-out infinite;flex-shrink:0}
+.row:hover{background:#f8fafc;border-radius:8px;padding-left:8px;padding-right:8px}
+
+/* ── STAKEHOLDER CARDS ── */
+.sk{background:#f8fafc;border:1px solid #e8edf4;border-radius:16px;padding:16px 18px;margin-bottom:10px;transition:all .25s;cursor:default}
+.sk:hover{border-color:#10b981;box-shadow:0 4px 20px rgba(16,185,129,.1);transform:translateY(-2px);background:#ffffff}
+
+/* ── MESSAGE BLOCKS ── */
+.msg{background:#f8fafc;border-left:3px solid #10b981;border-radius:0 14px 14px 0;padding:18px 20px;font-size:13px;color:#1e293b;white-space:pre-wrap;line-height:1.85;font-family:Inter,Verdana,sans-serif}
+
+/* ── SPIN QUESTIONS ── */
+.spinq{background:#f8fafc;border:1.5px solid #e8edf4;border-radius:14px;padding:13px 16px;font-size:13px;color:#334155;margin-bottom:8px;display:flex;gap:12px;line-height:1.6;transition:all .2s}
+.spinq:hover{border-color:#10b981;background:#ffffff;box-shadow:0 2px 8px rgba(16,185,129,.08)}
+.spinq::before{content:"?";color:#10b981;font-weight:800;flex-shrink:0;font-size:15px;line-height:1.4}
+
+/* ── OBJECTIONS ── */
+.obj{background:#f8fafc;border:1.5px solid #e8edf4;border-radius:14px;padding:16px 18px;margin-bottom:10px;transition:all .2s}
+.obj:hover{border-color:#f59e0b;background:#ffffff;box-shadow:0 2px 12px rgba(245,158,11,.08)}
+
+/* ── NEWS CARDS ── */
+.news{background:#f8fafc;border:1.5px solid #e8edf4;border-radius:16px;padding:16px 18px;margin-bottom:10px;transition:all .2s}
+.news:hover{border-color:#10b981;transform:translateY(-2px);box-shadow:0 4px 16px rgba(15,23,42,.08);background:#ffffff}
+
+/* ── PILLS ── */
+.pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10.5px;font-weight:600;margin:3px;letter-spacing:.2px}
+
+/* ── LOADING DOT ── */
+.dot{width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse 1.1s ease-in-out infinite;flex-shrink:0}
+
+/* ── ANIMATIONS ── */
 .fade{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) forwards}
-.upload-zone{border:2px dashed #2d3a52;border-radius:16px;padding:32px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(26,36,56,.3)}
-.upload-zone:hover{border-color:#34d399;background:rgba(52,211,153,.06);transform:scale(1.01)}
-.batch-card{background:linear-gradient(145deg,#141c2e,#0f1626);border:1px solid #2d3a52;border-radius:14px;padding:14px 16px;cursor:pointer;transition:all .25s;text-align:left;font-family:Verdana,sans-serif;width:100%}
-.batch-card:hover{border-color:#34d399;transform:translateY(-2px);box-shadow:0 6px 20px rgba(52,211,153,.12)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.live-badge{animation:glow 2s ease-in-out infinite}
-@media(max-width:600px){.g2{grid-template-columns:1fr}}
+.live-badge{animation:glowGreen 2.5s ease-in-out infinite}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:2px dashed #cbd5e1;border-radius:18px;padding:36px;text-align:center;cursor:pointer;transition:all .25s;background:#f8fafc}
+.upload-zone:hover{border-color:#10b981;background:rgba(16,185,129,.04);transform:scale(1.01)}
+
+/* ── BATCH CARDS ── */
+.batch-card{background:#ffffff;border:1.5px solid #e8edf4;border-radius:16px;padding:16px 18px;cursor:pointer;transition:all .25s;text-align:left;font-family:Inter,Verdana,sans-serif;width:100%;box-shadow:0 1px 4px rgba(15,23,42,.05)}
+.batch-card:hover{border-color:#10b981;transform:translateY(-2px);box-shadow:0 6px 24px rgba(16,185,129,.12)}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.g2{grid-template-columns:1fr}}
 `;
 
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0c1420 0%,#080e1a 50%,#0a1220 100%)",fontFamily:"Verdana,Geneva,sans-serif",color:"#f1f5f9"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0fdf8 0%,#f8fafc 40%,#eff6ff 100%)",fontFamily:"Inter,system-ui,-apple-system,Verdana,sans-serif",color:"#0f172a"}}>
       <style>{css}</style>
 
       {/* HEADER */}
-      <div style={{borderBottom:"1px solid rgba(45,58,82,.7)",padding:"14px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(12,20,32,.92)",backdropFilter:"blur(20px)",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 24px rgba(0,0,0,.4)"}}>
+      <div style={{borderBottom:"1px solid rgba(15,23,42,.08)",padding:"14px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,.85)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 16px rgba(15,23,42,.06)"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <div style={{width:40,height:40,background:"linear-gradient(135deg,#34d399,#059669)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(52,211,153,.4)"}}>
+          <div style={{width:42,height:42,background:"linear-gradient(135deg,#10b981,#059669)",borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(16,185,129,.35)"}}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="#022c1a" strokeWidth="1.8" opacity="0.3"/>
-              <circle cx="12" cy="12" r="5" stroke="#022c1a" strokeWidth="1.8" opacity="0.55"/>
-              <circle cx="12" cy="12" r="2" fill="#022c1a"/>
-              <path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="#022c1a" strokeWidth="1.8" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,.35)" strokeWidth="1.8"/>
+              <circle cx="12" cy="12" r="5" stroke="rgba(255,255,255,.6)" strokeWidth="1.8"/>
+              <circle cx="12" cy="12" r="2" fill="white"/>
+              <path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="rgba(255,255,255,.7)" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
           </div>
           <div>
-            <div style={{fontSize:14,fontWeight:700,color:"#f8fafc",letterSpacing:"-0.2px"}}>Account Mapper by Andrei Heimann</div>
-            <div style={{fontSize:8.5,color:"#34d399",letterSpacing:1.5,fontWeight:700}}>ENTERPRISE PROSPECTING TOOL <span style={{color:"#2d3a52"}}>·</span> V2</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#0f172a",letterSpacing:"-0.3px"}}>Account Mapper <span style={{color:"#10b981"}}>Pro</span></div>
+            <div style={{fontSize:8.5,color:"#10b981",letterSpacing:2,fontWeight:700,textTransform:"uppercase"}}>Enterprise Prospecting Tool · V2</div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span className={liveMode?"live-badge":""} style={{fontSize:9,fontWeight:700,letterSpacing:1,padding:"5px 12px",borderRadius:20,border:`1px solid ${liveMode?"#34d399":"#2d3a52"}`,color:liveMode?"#34d399":"#4a5878",background:liveMode?"rgba(52,211,153,.1)":"transparent",transition:"all .3s"}}>
+          <span className={liveMode?"live-badge":""} style={{fontSize:9,fontWeight:700,letterSpacing:1,padding:"5px 13px",borderRadius:20,border:`1.5px solid ${liveMode?"#10b981":"#e2e8f0"}`,color:liveMode?"#059669":"#94a3b8",background:liveMode?"rgba(16,185,129,.08)":"#f8fafc",transition:"all .3s"}}>
             {liveMode?"● LIVE":"○ OFFLINE"}
           </span>
           {data&&<button className="btn2" onClick={exportPDF}>↓ PDF</button>}
         </div>
       </div>
 
-      <div style={{maxWidth:940,margin:"0 auto",padding:"28px 20px"}}>
+      <div style={{maxWidth:960,margin:"0 auto",padding:"32px 24px"}}>
 
         {/* TABS */}
-        <div style={{display:"flex",gap:4,marginBottom:28,background:"rgba(20,28,46,.8)",border:"1px solid #2d3a52",borderRadius:16,padding:5,width:"fit-content",boxShadow:"0 4px 16px rgba(0,0,0,.3)"}}>
+        <div style={{display:"flex",gap:4,marginBottom:32,background:"#ffffff",border:"1.5px solid #e8edf4",borderRadius:16,padding:5,width:"fit-content",boxShadow:"0 2px 8px rgba(15,23,42,.06)"}}>
           {[["single","🎯  Análise Individual"],["batch","📂  Lote (CSV)"]].map(([m,label])=>(
-            <button key={m} onClick={()=>{setMode(m);setError("");}} style={{padding:"10px 22px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"Verdana,sans-serif",fontSize:12,fontWeight:700,transition:"all .2s",background:mode===m?"linear-gradient(135deg,#34d399,#059669)":"transparent",color:mode===m?"#022c1a":"#7d8ca8",boxShadow:mode===m?"0 2px 12px rgba(52,211,153,.25)":"none"}}>
+            <button key={m} onClick={()=>{setMode(m);setError("");}} style={{padding:"10px 24px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"Inter,Verdana,sans-serif",fontSize:12.5,fontWeight:600,transition:"all .2s",background:mode===m?"linear-gradient(135deg,#10b981,#059669)":"transparent",color:mode===m?"#ffffff":"#64748b",boxShadow:mode===m?"0 2px 12px rgba(16,185,129,.3)":"none"}}>
               {label}
             </button>
           ))}
@@ -996,13 +1029,13 @@ export default function App() {
         {/* SINGLE MODE */}
         {mode==="single"&&(
           <div style={{marginBottom:36,animation:"fadeUp .4s ease"}}>
-            <div style={{fontSize:24,fontWeight:800,color:"#f8fafc",marginBottom:5,letterSpacing:"-0.5px"}}>Account Mapper Pro</div>
-            <div style={{fontSize:12.5,color:"#7d8ca8",marginBottom:24,lineHeight:1.6}}>Digite o nome ou cole o site da empresa para gerar o mapeamento completo com dados atualizados em tempo real.</div>
+            <div style={{fontSize:28,fontWeight:800,color:"#0f172a",marginBottom:6,letterSpacing:"-0.6px"}}>Account <span style={{color:"#10b981"}}>Mapping</span></div>
+            <div style={{fontSize:13,color:"#64748b",marginBottom:28,lineHeight:1.7}}>Digite o nome ou cole o site de uma empresa para gerar o mapeamento completo com dados atualizados em tempo real.</div>
 
             <div style={{display:"flex",gap:8,marginBottom:14}}>
               {["Nome da empresa","Site (URL)"].map((label,i)=>{
                 const active=input.trim()?(i===0?!isUrl(input):isUrl(input)):i===0;
-                return <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",padding:"5px 12px",borderRadius:20,border:`1px solid ${active?"#34d399":"#2d3a52"}`,color:active?"#34d399":"#4a5878",background:active?"rgba(52,211,153,.12)":"transparent",transition:"all .25s"}}>{label}</span>;
+                return <span key={i} style={{fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase",padding:"5px 13px",borderRadius:20,border:`1.5px solid ${active?"#10b981":"#e2e8f0"}`,color:active?"#059669":"#94a3b8",background:active?"rgba(16,185,129,.08)":"#f8fafc",transition:"all .25s"}}>{label}</span>;
               })}
             </div>
 
@@ -1018,34 +1051,34 @@ export default function App() {
                 Anexar RI / Relatório (PDF ou TXT)
               </button>
               {contextFileName&&(
-                <span style={{fontSize:11,color:"#34d399",display:"flex",alignItems:"center",gap:7,background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.2)",borderRadius:10,padding:"6px 12px"}}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span style={{fontSize:11,color:"#10b981",display:"flex",alignItems:"center",gap:7,background:"rgba(16,185,129,.08)",border:"1px solid rgba(16,185,129,.2)",borderRadius:10,padding:"6px 12px"}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   {contextFileName}
-                  <button onClick={()=>{setContextText("");setContextFileName("");}} style={{background:"none",border:"none",color:"#4a5878",cursor:"pointer",fontSize:16,lineHeight:1,marginLeft:2}}>×</button>
+                  <button onClick={()=>{setContextText("");setContextFileName("");}} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:16,lineHeight:1,marginLeft:2}}>×</button>
                 </span>
               )}
             </div>
-            <div style={{fontSize:10.5,color:"#4a5878",marginTop:8}}>Conteúdo do arquivo é extraído e incorporado à análise como contexto adicional.</div>
+            <div style={{fontSize:10.5,color:"#94a3b8",marginTop:8}}>Conteúdo do arquivo é extraído e incorporado à análise como contexto adicional.</div>
 
             {loading&&(
-              <div style={{display:"flex",alignItems:"center",gap:12,marginTop:16,background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.15)",borderRadius:12,padding:"12px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginTop:16,background:"rgba(16,185,129,.06)",border:"1px solid rgba(16,185,129,.15)",borderRadius:12,padding:"12px 16px"}}>
                 <div className="dot"/>
-                <span style={{fontSize:12.5,color:"#a3b1c9"}}>{step}</span>
+                <span style={{fontSize:12.5,color:"#64748b"}}>{step}</span>
               </div>
             )}
-            {error&&<div style={{marginTop:12,color:"#fca5a5",fontSize:12,background:"rgba(248,113,113,.07)",border:"1px solid rgba(248,113,113,.2)",borderRadius:12,padding:"12px 16px"}}>⚠ {error}</div>}
+            {error&&<div style={{marginTop:12,color:"#e11d48",fontSize:12,background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:12,padding:"12px 16px"}}>⚠ {error}</div>}
           </div>
         )}
 
         {/* BATCH MODE */}
         {mode==="batch"&&(
           <div style={{marginBottom:36,animation:"fadeUp .4s ease"}}>
-            <div style={{fontSize:24,fontWeight:800,color:"#f8fafc",marginBottom:5,letterSpacing:"-0.5px"}}>Análise em Lote</div>
-            <div style={{fontSize:12.5,color:"#7d8ca8",marginBottom:24}}>Envie um CSV para gerar account mapping individual e painel consolidado. Máximo {BATCH_LIMIT} empresas por rodada.</div>
+            <div style={{fontSize:24,fontWeight:800,color:"#0f172a",marginBottom:5,letterSpacing:"-0.5px"}}>Análise em Lote</div>
+            <div style={{fontSize:12.5,color:"#94a3b8",marginBottom:24}}>Envie um CSV para gerar account mapping individual e painel consolidado. Máximo {BATCH_LIMIT} empresas por rodada.</div>
 
-            <div style={{background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.18)",borderRadius:14,padding:"14px 18px",marginBottom:20}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#34d399",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Formato esperado do CSV</div>
-              <code style={{display:"block",fontFamily:"monospace",fontSize:11,color:"#a3b1c9",lineHeight:1.8,background:"rgba(0,0,0,.2)",padding:"10px 14px",borderRadius:8}}>
+            <div style={{background:"rgba(16,185,129,.06)",border:"1px solid rgba(16,185,129,.18)",borderRadius:14,padding:"14px 18px",marginBottom:20}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#10b981",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Formato esperado do CSV</div>
+              <code style={{display:"block",fontFamily:"monospace",fontSize:11,color:"#64748b",lineHeight:1.8,background:"rgba(0,0,0,.2)",padding:"10px 14px",borderRadius:8}}>
                 nome,site<br/>
                 Banco Inter,https://bancointer.com.br<br/>
                 Stone,https://stone.com.br<br/>
@@ -1057,13 +1090,13 @@ export default function App() {
             {!batchList.length?(
               <div className="upload-zone" onClick={()=>csvRef.current?.click()}>
                 <div style={{fontSize:36,marginBottom:12}}>📂</div>
-                <div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",marginBottom:5}}>Selecionar arquivo CSV</div>
-                <div style={{fontSize:12,color:"#4a5878"}}>Clique aqui ou arraste o arquivo</div>
+                <div style={{fontSize:15,fontWeight:700,color:"#334155",marginBottom:5}}>Selecionar arquivo CSV</div>
+                <div style={{fontSize:12,color:"#94a3b8"}}>Clique aqui ou arraste o arquivo</div>
               </div>
             ):(
               <div>
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
-                  <div style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.3)",borderRadius:12,padding:"9px 16px",fontSize:12.5,color:"#34d399",fontWeight:700}}>
+                  <div style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.3)",borderRadius:12,padding:"9px 16px",fontSize:12.5,color:"#10b981",fontWeight:700}}>
                     ✓ {batchList.length} empresa{batchList.length>1?"s":""} carregada{batchList.length>1?"s":""}
                     {batchList.length>BATCH_LIMIT&&<span style={{color:"#fbbf24"}}> — processando as primeiras {BATCH_LIMIT}</span>}
                   </div>
@@ -1072,24 +1105,24 @@ export default function App() {
                 </div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {batchList.slice(0,BATCH_LIMIT).map((c,i)=>(
-                    <span key={i} className="pill" style={{background:"rgba(26,36,56,.8)",border:"1px solid #2d3a52",color:"#a3b1c9"}}>{c}</span>
+                    <span key={i} className="pill" style={{background:"#f8fafc",border:"1px solid #e8edf4",color:"#64748b"}}>{c}</span>
                   ))}
                 </div>
               </div>
             )}
 
             {loading&&(
-              <div style={{marginTop:20,background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.15)",borderRadius:14,padding:"16px 20px"}}>
+              <div style={{marginTop:20,background:"rgba(16,185,129,.06)",border:"1px solid rgba(16,185,129,.15)",borderRadius:14,padding:"16px 20px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}><div className="dot"/><span style={{fontSize:12.5,color:"#a3b1c9"}}>{step}</span></div>
-                  <span style={{fontSize:12,color:"#34d399",fontWeight:700}}>{batchProg.done}/{batchProg.total}</span>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}><div className="dot"/><span style={{fontSize:12.5,color:"#64748b"}}>{step}</span></div>
+                  <span style={{fontSize:12,color:"#10b981",fontWeight:700}}>{batchProg.done}/{batchProg.total}</span>
                 </div>
-                <div style={{height:8,background:"#141c2e",borderRadius:10,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${batchProg.total?(batchProg.done/batchProg.total)*100:0}%`,background:"linear-gradient(90deg,#34d399,#059669)",transition:"width .5s cubic-bezier(.22,1,.36,1)",boxShadow:"0 0 12px rgba(52,211,153,.5)",borderRadius:10}}/>
+                <div style={{height:8,background:"#f8fafc",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${batchProg.total?(batchProg.done/batchProg.total)*100:0}%`,background:"linear-gradient(90deg,#10b981,#059669)",transition:"width .5s cubic-bezier(.22,1,.36,1)",boxShadow:"0 0 12px rgba(16,185,129,.5)",borderRadius:10}}/>
                 </div>
               </div>
             )}
-            {error&&<div style={{marginTop:12,color:"#fca5a5",fontSize:12,background:"rgba(248,113,113,.07)",border:"1px solid rgba(248,113,113,.2)",borderRadius:12,padding:"12px 16px"}}>⚠ {error}</div>}
+            {error&&<div style={{marginTop:12,color:"#e11d48",fontSize:12,background:"#fff1f2",border:"1px solid #fecdd3",borderRadius:12,padding:"12px 16px"}}>⚠ {error}</div>}
           </div>
         )}
 
@@ -1099,34 +1132,34 @@ export default function App() {
             <div className="card" style={{marginBottom:20}}>
               <div className="ct">Painel Consolidado do Lote</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:22}}>
-                {[["Total Analisadas",consolidated.total,"#34d399"],["Fit Alto",consolidated.byScore.ALTO,"#34d399"],["Fit Médio",consolidated.byScore.MEDIO,"#fbbf24"],["Fit Baixo",consolidated.byScore.BAIXO,"#f87171"],["Tier 1",consolidated.byTier["Tier 1"].length,"#34d399"],["Tier 2",consolidated.byTier["Tier 2"].length,"#fbbf24"]].map(([l,v,c])=>(
+                {[["Total Analisadas",consolidated.total,"#10b981"],["Fit Alto",consolidated.byScore.ALTO,"#10b981"],["Fit Médio",consolidated.byScore.MEDIO,"#fbbf24"],["Fit Baixo",consolidated.byScore.BAIXO,"#f87171"],["Tier 1",consolidated.byTier["Tier 1"].length,"#10b981"],["Tier 2",consolidated.byTier["Tier 2"].length,"#fbbf24"]].map(([l,v,c])=>(
                   <div key={l} style={{background:"linear-gradient(145deg,#141c2e,#0f1626)",borderRadius:14,padding:"16px 12px",textAlign:"center",border:`1px solid rgba(45,58,82,.8)`}}>
                     <div style={{fontSize:30,fontWeight:800,color:c,lineHeight:1,textShadow:`0 0 20px ${c}44`}}>{v}</div>
-                    <div style={{fontSize:9,color:"#7d8ca8",textTransform:"uppercase",letterSpacing:1,marginTop:5}}>{l}</div>
+                    <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginTop:5}}>{l}</div>
                   </div>
                 ))}
               </div>
               <div style={{marginBottom:18}}>
-                <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Distribuição por setor</div>
+                <div style={{fontSize:9,color:"#10b981",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Distribuição por setor</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {Object.entries(consolidated.setores).map(([s,n])=>(
-                    <span key={s} className="pill" style={{background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.25)",color:"#34d399"}}>{s}: {n}</span>
+                    <span key={s} className="pill" style={{background:"rgba(16,185,129,.08)",border:"1px solid rgba(16,185,129,.25)",color:"#10b981"}}>{s}: {n}</span>
                   ))}
                 </div>
               </div>
-              <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>Contas analisadas — clique para abrir o account mapping completo</div>
+              <div style={{fontSize:9,color:"#10b981",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>Contas analisadas — clique para abrir o account mapping completo</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
                 {batchResults.map((b,i)=>{
                   const bsk=scoreKey(b.data?.fit?.score);
                   const bss=scoreColors[bsk];
                   return (
                     <button key={i} className="batch-card" onClick={()=>{setSelectedBatch(b);setData(b.data);setLiveMode(b.liveMode);}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",marginBottom:4}}>{b.company}</div>
-                      <div style={{fontSize:10,color:"#7d8ca8",marginBottom:10}}>{b.data?.empresa?.setor||""}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:4}}>{b.company}</div>
+                      <div style={{fontSize:10,color:"#94a3b8",marginBottom:10}}>{b.data?.empresa?.setor||""}</div>
                       <div style={{display:"flex",gap:6,alignItems:"center"}}>
                         <span style={{fontSize:9,fontWeight:700,color:bss?.text,background:bss?.bg,border:`1px solid ${bss?.border}`,padding:"3px 9px",borderRadius:20}}>FIT {b.data?.fit?.score}</span>
                         <span style={{fontSize:9,color:tierColors[b.data?.estrategia?.tier]||"#7d8ca8",fontWeight:700}}>{b.data?.estrategia?.tier}</span>
-                        <span style={{fontSize:9,color:b.liveMode?"#34d399":"#4a5878",marginLeft:"auto"}}>{b.liveMode?"● live":"○ base"}</span>
+                        <span style={{fontSize:9,color:b.liveMode?"#10b981":"#4a5878",marginLeft:"auto"}}>{b.liveMode?"● live":"○ base"}</span>
                       </div>
                     </button>
                   );
@@ -1162,9 +1195,9 @@ export default function App() {
               <h2>Concorrentes Prováveis</h2><ul>{safeArr(safeData.mercado?.competidores_provedor).map((c,i)=><li key={i}>{c}</li>)}</ul>
               <h2>Stakeholders</h2>{safeArr(safeData.stakeholders).map((s,i)=><div key={i} className="sk"><b>{s.cargo}</b> [{s.prioridade}] — Urgência: {s.urgencia}<p style={{marginTop:5,color:"#475569"}}>{s.angulo}</p></div>)}
               <h2>Notícias e Contexto</h2>{safeArr(safeData.noticias).map((n,i)=><div key={i} className="card" style={{marginBottom:8}}><b>{n.titulo}</b><p style={{marginTop:4,color:"#475569"}}>{n.resumo}</p><p style={{marginTop:4,fontSize:10,color:"#22c55e"}}>{n.relevancia}</p></div>)}
-              <h2>E-mail — Variante 1</h2><div className="msg">{safeArr(safeData.estrategia?.emails)[0]?.corpo}</div>
-              <h2>InMail LinkedIn — Variante 1</h2><div className="msg">{safeArr(safeData.estrategia?.inmails)[0]?.corpo}</div>
-              <h2>WhatsApp — Variante 1</h2><div className="msg">{safeArr(safeData.estrategia?.whatsapps)[0]}</div>
+              <h2>E-mail — Template 1</h2><div className="msg">{safeArr(safeData.estrategia?.emails)[0]?.corpo}</div>
+              <h2>InMail LinkedIn — Template 1</h2><div className="msg">{safeArr(safeData.estrategia?.inmails)[0]?.corpo}</div>
+              <h2>WhatsApp — Template 1</h2><div className="msg">{safeArr(safeData.estrategia?.whatsapps)[0]}</div>
               <h2>Cold Call — Abertura 1</h2><div className="msg">{safeArr(safeData.estrategia?.cold_calls)[0]}</div>
               <h2>Perguntas SPIN</h2><ul>{safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=><li key={i}>{q}</li>)}</ul>
               <h2>Objeções</h2>{safeArr(safeData.estrategia?.objecoes).map((o,i)=><div key={i} className="sk"><b>"{o.objecao}"</b><p style={{marginTop:4}}>→ {o.resposta}</p></div>)}
@@ -1178,12 +1211,12 @@ export default function App() {
             {/* VISUAL HEADER */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:16}}>
               <div style={{flex:1,minWidth:200}}>
-                <div style={{fontSize:26,fontWeight:800,color:"#f8fafc",letterSpacing:"-0.5px",lineHeight:1.2,marginBottom:6}}>{safeData.empresa?.nome}</div>
-                <div style={{fontSize:12,color:"#7d8ca8",marginBottom:12}}>{safeData.empresa?.setor} · {safeData.empresa?.sede} · {safeData.empresa?.operacao}</div>
+                <div style={{fontSize:26,fontWeight:800,color:"#0f172a",letterSpacing:"-0.5px",lineHeight:1.2,marginBottom:6}}>{safeData.empresa?.nome}</div>
+                <div style={{fontSize:12,color:"#94a3b8",marginBottom:12}}>{safeData.empresa?.setor} · {safeData.empresa?.sede} · {safeData.empresa?.operacao}</div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                   <span style={{background:ss?.bg,border:`1.5px solid ${ss?.border}`,color:ss?.text,borderRadius:10,padding:"5px 16px",fontSize:10,fontWeight:700,letterSpacing:1,boxShadow:`0 0 12px ${ss?.glow}`}}>FIT {safeData.fit?.score}</span>
-                  <span style={{background:"rgba(20,28,46,.8)",border:`1.5px solid ${tierColors[safeData.estrategia?.tier]||"#2d3a52"}`,color:tierColors[safeData.estrategia?.tier]||"#7d8ca8",borderRadius:10,padding:"5px 16px",fontSize:10,fontWeight:700}}>{safeData.estrategia?.tier}</span>
-                  <span style={{background:"rgba(20,28,46,.8)",border:"1px solid #2d3a52",borderRadius:10,padding:"5px 14px",fontSize:10,color:"#7d8ca8"}}>{safeData.empresa?.estagio}</span>
+                  <span style={{background:"#ffffff",border:`1.5px solid ${tierColors[safeData.estrategia?.tier]||"#2d3a52"}`,color:tierColors[safeData.estrategia?.tier]||"#7d8ca8",borderRadius:10,padding:"5px 16px",fontSize:10,fontWeight:700}}>{safeData.estrategia?.tier}</span>
+                  <span style={{background:"#ffffff",border:"1px solid #e8edf4",borderRadius:10,padding:"5px 14px",fontSize:10,color:"#94a3b8"}}>{safeData.empresa?.estagio}</span>
                 </div>
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:12}}>
@@ -1196,14 +1229,14 @@ export default function App() {
             </div>
 
             {/* EMPRESA RESUMO */}
-            <div className="card" style={{marginBottom:16,borderColor:"rgba(52,211,153,.2)"}}>
+            <div className="card" style={{marginBottom:16,borderColor:"rgba(16,185,129,.2)"}}>
               <div className="ct">Visão Geral da Empresa</div>
-              <div style={{fontSize:13,lineHeight:1.75,color:"#e2e8f0",marginBottom:16}}>{safeData.empresa?.resumo}</div>
+              <div style={{fontSize:13,lineHeight:1.75,color:"#334155",marginBottom:16}}>{safeData.empresa?.resumo}</div>
               <div className="g2">
                 {[["Faturamento",safeData.empresa?.faturamento],["Porte",safeData.empresa?.tamanho],["Clientes",safeData.empresa?.clientes],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa]].filter(([,v])=>v).map(([k,v])=>(
-                  <div key={k} style={{background:"rgba(20,28,46,.6)",borderRadius:10,padding:"10px 14px",border:"1px solid #232f47"}}>
-                    <div style={{fontSize:9,color:"#4a5878",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{k}</div>
-                    <div style={{fontSize:12.5,color:"#e2e8f0",fontWeight:600}}>{v}</div>
+                  <div key={k} style={{background:"rgba(20,28,46,.6)",borderRadius:10,padding:"10px 14px",border:"1px solid #f1f5f9"}}>
+                    <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{k}</div>
+                    <div style={{fontSize:12.5,color:"#334155",fontWeight:600}}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -1213,11 +1246,11 @@ export default function App() {
             <div className="g2" style={{marginBottom:0}}>
               <div className="card" style={{borderColor:ss?.border+"55"}}>
                 <div className="ct">Fit Certta</div>
-                <div style={{fontSize:12.5,lineHeight:1.75,marginBottom:16,color:"#e2e8f0"}}>{safeData.fit?.justificativa}</div>
+                <div style={{fontSize:12.5,lineHeight:1.75,marginBottom:16,color:"#334155"}}>{safeData.fit?.justificativa}</div>
                 <div style={{marginBottom:8}}>
-                  <div style={{fontSize:9,color:"#4a5878",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Aplicáveis</div>
+                  <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Aplicáveis</div>
                   {safeArr(safeData.fit?.solucoes_certta).map((s,i)=>(
-                    <span key={i} className="pill" style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.28)",color:"#34d399"}}>{s}</span>
+                    <span key={i} className="pill" style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.28)",color:"#10b981"}}>{s}</span>
                   ))}
                 </div>
               </div>
@@ -1225,7 +1258,7 @@ export default function App() {
                 <div className="ct">Use Cases Prioritários</div>
                 {safeArr(safeData.fit?.use_cases).map((u,i)=>(
                   <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
-                    <span style={{color:"#34d399",fontSize:12,flexShrink:0,marginTop:1}}>→</span>{u}
+                    <span style={{color:"#10b981",fontSize:12,flexShrink:0,marginTop:1}}>→</span>{u}
                   </div>
                 ))}
               </div>
@@ -1272,9 +1305,9 @@ export default function App() {
                 <div className="ct" style={{marginBottom:0}}>Organograma de Stakeholders</div>
                 <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                   {safeArr(enriched?.sources).map((src,i)=>(
-                    <span key={i} className="pill" style={{background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.25)",color:"#34d399",fontSize:9}}>{src}</span>
+                    <span key={i} className="pill" style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.25)",color:"#10b981",fontSize:9}}>{src}</span>
                   ))}
-                  {enriching&&<div style={{display:"flex",alignItems:"center",gap:6}}><div className="dot" style={{width:6,height:6}}/><span style={{fontSize:9,color:"#a3b1c9"}}>Enriquecendo...</span></div>}
+                  {enriching&&<div style={{display:"flex",alignItems:"center",gap:6}}><div className="dot" style={{width:6,height:6}}/><span style={{fontSize:9,color:"#64748b"}}>Enriquecendo...</span></div>}
                   {!enriched&&!enriching&&data&&(
                     <button className="btn3" style={{fontSize:10,padding:"5px 12px"}} onClick={()=>fetchStakeholders(input.trim(),extractDomain(input.trim()))}>
                       Buscar contatos reais
@@ -1284,22 +1317,22 @@ export default function App() {
               </div>
               {enriched&&safeArr(enriched.contacts).length>0&&(
                 <div style={{marginBottom:20}}>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#34d399",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{width:6,height:6,borderRadius:"50%",background:"#34d399",display:"inline-block",boxShadow:"0 0 8px rgba(52,211,153,.6)"}}/>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#10b981",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:"#10b981",display:"inline-block",boxShadow:"0 0 8px rgba(16,185,129,.6)"}}/>
                     Contatos Reais — {enriched.total} encontrado{enriched.total!==1?"s":""}
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:10,marginBottom:12}}>
                     {safeArr(enriched.contacts).map((contact,i)=>(
-                      <div key={i} style={{background:"linear-gradient(145deg,#0f1e30,#0a1628)",border:"1px solid rgba(52,211,153,.2)",borderRadius:14,padding:"14px 16px",transition:"all .25s"}}
-                        onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(52,211,153,.5)"}
-                        onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(52,211,153,.2)"}>
+                      <div key={i} style={{background:"#f0fdf4",border:"1px solid rgba(16,185,129,.2)",borderRadius:14,padding:"14px 16px",transition:"all .25s"}}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(16,185,129,.5)"}
+                        onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(16,185,129,.2)"}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                           <div style={{flex:1}}>
-                            <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9",lineHeight:1.3}}>{contact.nome}</div>
-                            <div style={{fontSize:11,color:"#34d399",marginTop:3}}>{contact.cargo}</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#1e293b",lineHeight:1.3}}>{contact.nome}</div>
+                            <div style={{fontSize:11,color:"#10b981",marginTop:3}}>{contact.cargo}</div>
                           </div>
                           <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",marginLeft:8,flexShrink:0}}>
-                            <span style={{background:"rgba(52,211,153,.12)",border:"1px solid rgba(52,211,153,.3)",color:"#34d399",borderRadius:6,padding:"2px 8px",fontSize:8,fontWeight:700}}>{(contact.source||"").split(" ")[0]}</span>
+                            <span style={{background:"rgba(16,185,129,.12)",border:"1px solid rgba(16,185,129,.3)",color:"#10b981",borderRadius:6,padding:"2px 8px",fontSize:8,fontWeight:700}}>{(contact.source||"").split(" ")[0]}</span>
                             {contact.is_senior&&<span style={{fontSize:8,color:"#fbbf24",fontWeight:700}}>DECISOR</span>}
                           </div>
                         </div>
@@ -1308,11 +1341,11 @@ export default function App() {
                             <a href={"mailto:"+contact.email} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#7dd3fc",textDecoration:"none",background:"rgba(125,211,252,.06)",borderRadius:6,padding:"4px 8px"}}>
                               <span>✉</span>
                               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{contact.email}</span>
-                              {contact.email_confidence>0&&<span style={{fontSize:8,color:"#4a5878",marginLeft:"auto",flexShrink:0}}>{contact.email_confidence}%</span>}
+                              {contact.email_confidence>0&&<span style={{fontSize:8,color:"#94a3b8",marginLeft:"auto",flexShrink:0}}>{contact.email_confidence}%</span>}
                             </a>
                           )}
                           {contact.phone&&(
-                            <a href={"tel:"+contact.phone} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#a3b1c9",textDecoration:"none",background:"rgba(255,255,255,.03)",borderRadius:6,padding:"4px 8px"}}>
+                            <a href={"tel:"+contact.phone} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#64748b",textDecoration:"none",background:"rgba(255,255,255,.03)",borderRadius:6,padding:"4px 8px"}}>
                               <span>tel</span>{contact.phone}
                             </a>
                           )}
@@ -1322,7 +1355,7 @@ export default function App() {
                               <span>in</span><span>Ver perfil LinkedIn</span>
                             </a>
                           )}
-                          {contact.department&&<div style={{fontSize:10,color:"#4a5878",padding:"2px 0"}}>Depto: {contact.department}{contact.cidade?" · "+contact.cidade:""}</div>}
+                          {contact.department&&<div style={{fontSize:10,color:"#94a3b8",padding:"2px 0"}}>Depto: {contact.department}{contact.cidade?" · "+contact.cidade:""}</div>}
                         </div>
                       </div>
                     ))}
@@ -1330,23 +1363,23 @@ export default function App() {
                   {enriched.tavily_context&&(
                     <div style={{background:"rgba(125,211,252,.05)",border:"1px solid rgba(125,211,252,.15)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
                       <div style={{fontSize:8,fontWeight:700,color:"#7dd3fc",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Contexto de Liderança</div>
-                      <div style={{fontSize:11.5,color:"#a3b1c9",lineHeight:1.6}}>{enriched.tavily_context}</div>
+                      <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.6}}>{enriched.tavily_context}</div>
                     </div>
                   )}
                   {safeArr(enriched.errors).length>0&&(
-                    <div style={{fontSize:10,color:"#4a5878",padding:"6px 10px",background:"rgba(255,255,255,.02)",borderRadius:8,border:"1px solid #2d3a52"}}>
+                    <div style={{fontSize:10,color:"#94a3b8",padding:"6px 10px",background:"rgba(255,255,255,.02)",borderRadius:8,border:"1px solid #e8edf4"}}>
                       {safeArr(enriched.errors).map((e,i)=><div key={i}>⚠ {e}</div>)}
                     </div>
                   )}
                 </div>
               )}
               {enriched&&safeArr(enriched.contacts).length===0&&(
-                <div style={{background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.15)",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:12,color:"#a3b1c9",lineHeight:1.6}}>
+                <div style={{background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.15)",borderRadius:12,padding:"12px 16px",marginBottom:16,fontSize:12,color:"#64748b",lineHeight:1.6}}>
                   <span style={{color:"#fbbf24",fontWeight:700}}>Nenhum contato encontrado via API.</span>
-                  <div style={{fontSize:10.5,color:"#4a5878",marginTop:6}}>Configure HUNTER_API_KEY e APOLLO_API_KEY na Vercel para ativar o organograma real.</div>
+                  <div style={{fontSize:10.5,color:"#94a3b8",marginTop:6}}>Configure HUNTER_API_KEY e APOLLO_API_KEY na Vercel para ativar o organograma real.</div>
                 </div>
               )}
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:enriched&&safeArr(enriched.contacts).length>0?"#4a5878":"#34d399",marginBottom:12}}>
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:enriched&&safeArr(enriched.contacts).length>0?"#4a5878":"#10b981",marginBottom:12}}>
                 {enriched&&safeArr(enriched.contacts).length>0?"Mapeamento Estratégico de Cargos-Alvo":"Perfis de Entrada Recomendados"}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
@@ -1358,22 +1391,22 @@ export default function App() {
                     s.cargo.split("/")[0].trim().toLowerCase().split(" ").some(w=>w.length>3&&c.cargo?.toLowerCase().includes(w))
                   );
                   return (
-                    <div key={i} className="sk" style={matched?{borderColor:"rgba(52,211,153,.35)"}:{}}>
+                    <div key={i} className="sk" style={matched?{borderColor:"rgba(16,185,129,.35)"}:{}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                        <div style={{fontSize:12.5,fontWeight:700,color:"#f1f5f9",lineHeight:1.3,flex:1}}>{s.cargo}</div>
+                        <div style={{fontSize:12.5,fontWeight:700,color:"#1e293b",lineHeight:1.3,flex:1}}>{s.cargo}</div>
                         <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end",marginLeft:8,flexShrink:0}}>
                           <span style={{background:pc+"20",border:"1px solid "+pc,color:pc,borderRadius:6,padding:"2px 8px",fontSize:9,fontWeight:700,whiteSpace:"nowrap"}}>{s.prioridade}</span>
                           <span style={{fontSize:9,color:urgColor,fontWeight:600}}>Urgência: {s.urgencia}</span>
                         </div>
                       </div>
                       {matched&&(
-                        <div style={{background:"rgba(52,211,153,.08)",border:"1px solid rgba(52,211,153,.2)",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11}}>
-                          <div style={{color:"#34d399",fontWeight:700,marginBottom:2}}>Match: {matched.nome}</div>
+                        <div style={{background:"rgba(16,185,129,.08)",border:"1px solid rgba(16,185,129,.2)",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11}}>
+                          <div style={{color:"#10b981",fontWeight:700,marginBottom:2}}>Match: {matched.nome}</div>
                           {matched.email&&<div style={{color:"#7dd3fc",fontSize:10}}>{matched.email}</div>}
                           {matched.linkedin&&<a href={matched.linkedin} target="_blank" rel="noopener noreferrer" style={{color:"#60a5fa",fontSize:10,textDecoration:"none",display:"block"}}>Ver LinkedIn</a>}
                         </div>
                       )}
-                      <div style={{fontSize:11.5,color:"#a3b1c9",lineHeight:1.6}}>{s.angulo}</div>
+                      <div style={{fontSize:11.5,color:"#64748b",lineHeight:1.6}}>{s.angulo}</div>
                     </div>
                   );
                 })}
@@ -1386,9 +1419,9 @@ export default function App() {
                 <div className="ct">Notícias & Contexto de Mercado</div>
                 {safeArr(safeData.noticias).map((n,i)=>(
                   <div key={i} className="news" style={{animation:`fadeSlide .35s ease ${i*0.06}s both`}}>
-                    {n.url?<a href={n.url} target="_blank" rel="noopener noreferrer" style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#7dd3fc",textDecoration:"none",display:"block",lineHeight:1.4}}>{n.titulo} ↗</a>:<div style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#f1f5f9",lineHeight:1.4}}>{n.titulo}</div>}
-                    <div style={{fontSize:12.5,color:"#a3b1c9",lineHeight:1.65,marginBottom:6}}>{n.resumo}</div>
-                    <div style={{fontSize:10,color:"#34d399",fontWeight:700}}>→ {n.relevancia}</div>
+                    {n.url?<a href={n.url} target="_blank" rel="noopener noreferrer" style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#7dd3fc",textDecoration:"none",display:"block",lineHeight:1.4}}>{n.titulo} ↗</a>:<div style={{fontSize:13,fontWeight:700,marginBottom:5,color:"#1e293b",lineHeight:1.4}}>{n.titulo}</div>}
+                    <div style={{fontSize:12.5,color:"#64748b",lineHeight:1.65,marginBottom:6}}>{n.resumo}</div>
+                    <div style={{fontSize:10,color:"#10b981",fontWeight:700}}>→ {n.relevancia}</div>
                   </div>
                 ))}
               </div>
@@ -1405,17 +1438,17 @@ export default function App() {
 
                 <div className="g2" style={{marginBottom:16}}>
                   <div>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#34d399",textTransform:"uppercase",marginBottom:10}}>Destaques Identificados</div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#10b981",textTransform:"uppercase",marginBottom:10}}>Destaques Identificados</div>
                     {safeArr(safeData.contexto_documento.destaques).map((d,i)=>(
-                      <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#e2e8f0",lineHeight:1.5}}>
-                        <span style={{color:"#34d399",flexShrink:0}}>✓</span>{d}
+                      <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#334155",lineHeight:1.5}}>
+                        <span style={{color:"#10b981",flexShrink:0}}>✓</span>{d}
                       </div>
                     ))}
                   </div>
                   <div>
                     <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#fbbf24",textTransform:"uppercase",marginBottom:10}}>Gatilhos Identificados no Doc.</div>
                     {safeArr(safeData.contexto_documento.triggers_identificados).map((t,i)=>(
-                      <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#e2e8f0",lineHeight:1.5}}>
+                      <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12,color:"#334155",lineHeight:1.5}}>
                         <span style={{color:"#fbbf24",flexShrink:0}}>⚡</span>{t}
                       </div>
                     ))}
@@ -1423,10 +1456,10 @@ export default function App() {
                 </div>
 
                 <div style={{marginBottom:16}}>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#34d399",textTransform:"uppercase",marginBottom:10}}>Oportunidades Comerciais Identificadas</div>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#10b981",textTransform:"uppercase",marginBottom:10}}>Oportunidades Comerciais Identificadas</div>
                   {safeArr(safeData.contexto_documento.oportunidades_comerciais).map((o,i)=>(
-                    <div key={i} style={{display:"flex",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12.5,color:"#e2e8f0",lineHeight:1.6}}>
-                      <span style={{color:"#34d399",flexShrink:0,fontSize:14}}>→</span>{o}
+                    <div key={i} style={{display:"flex",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(35,47,71,.6)",fontSize:12.5,color:"#334155",lineHeight:1.6}}>
+                      <span style={{color:"#10b981",flexShrink:0,fontSize:14}}>→</span>{o}
                     </div>
                   ))}
                 </div>
@@ -1434,7 +1467,7 @@ export default function App() {
                 <div style={{marginBottom:16}}>
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#f87171",textTransform:"uppercase",marginBottom:10}}>Pontos de Atenção</div>
                   {safeArr(safeData.contexto_documento.riscos_e_atencoes).map((r,i)=>(
-                    <div key={i} style={{display:"flex",gap:8,padding:"6px 0",fontSize:12,color:"#fca5a5",lineHeight:1.5}}>
+                    <div key={i} style={{display:"flex",gap:8,padding:"6px 0",fontSize:12,color:"#e11d48",lineHeight:1.5}}>
                       <span style={{flexShrink:0}}>!</span>{r}
                     </div>
                   ))}
@@ -1442,12 +1475,12 @@ export default function App() {
 
                 <div style={{background:"rgba(125,211,252,.06)",border:"1px solid rgba(125,211,252,.2)",borderRadius:12,padding:"14px 16px"}}>
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#7dd3fc",textTransform:"uppercase",marginBottom:8}}>Recomendação Estratégica</div>
-                  <div style={{fontSize:12.5,color:"#e2e8f0",lineHeight:1.7}}>{safeData.contexto_documento.recomendacao}</div>
+                  <div style={{fontSize:12.5,color:"#334155",lineHeight:1.7}}>{safeData.contexto_documento.recomendacao}</div>
                 </div>
 
                 {safeData.contexto_documento.trecho_referencia && (
                   <div style={{marginTop:14}}>
-                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#4a5878",textTransform:"uppercase",marginBottom:8}}>Trecho de Referência (início do documento)</div>
+                    <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#94a3b8",textTransform:"uppercase",marginBottom:8}}>Trecho de Referência (início do documento)</div>
                     <div style={{background:"rgba(0,0,0,.3)",borderRadius:10,padding:"12px 14px",fontSize:11,color:"#64748b",lineHeight:1.7,fontFamily:"monospace",whiteSpace:"pre-wrap"}}>{safeData.contexto_documento.trecho_referencia}</div>
                   </div>
                 )}
@@ -1458,7 +1491,7 @@ export default function App() {
             {["emails","inmails","whatsapps","cold_calls"].map((canal,ci)=>{
               const configs = {
                 emails:    { label:"E-mail", icon:"✉️", color:"#7dd3fc", bg:"rgba(125,211,252,.1)", border:"rgba(125,211,252,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
-                inmails:   { label:"InMail — LinkedIn", icon:"💼", color:"#34d399", bg:"rgba(52,211,153,.1)", border:"rgba(52,211,153,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
+                inmails:   { label:"InMail — LinkedIn", icon:"💼", color:"#10b981", bg:"rgba(16,185,129,.1)", border:"rgba(16,185,129,.3)", isObj:true, keyAssunto:"assunto", keyCorpo:"corpo" },
                 whatsapps: { label:"WhatsApp", icon:"💬", color:"#4ade80", bg:"rgba(74,222,128,.1)", border:"rgba(74,222,128,.3)", isObj:false },
                 cold_calls:{ label:"Cold Call — Abertura", icon:"📞", color:"#fbbf24", bg:"rgba(251,191,36,.1)", border:"rgba(251,191,36,.3)", isObj:false }
               };
@@ -1469,15 +1502,15 @@ export default function App() {
                 <div key={canal} className="card" style={{marginBottom:16}}>
                   <div className="ct" style={{color:cfg.color}}>
                     {cfg.icon} {cfg.label}
-                    <span style={{fontSize:9,color:"#4a5878",marginLeft:8,fontWeight:400,letterSpacing:0,textTransform:"none"}}>3 variantes — escolha a mais adequada ao momento</span>
+                    <span style={{fontSize:9,color:"#94a3b8",marginLeft:8,fontWeight:400,letterSpacing:0,textTransform:"none"}}>3 templates — escolha a mais adequada ao momento</span>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:14}}>
                     {items.map((item,i)=>(
                       <div key={i} style={{background:"linear-gradient(145deg,#141c2e,#0f1626)",border:`1px solid ${cfg.border}`,borderRadius:12,overflow:"hidden"}}>
                         <div style={{padding:"8px 14px",background:cfg.bg,borderBottom:`1px solid ${cfg.border}`,display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontSize:10,fontWeight:700,color:cfg.color,letterSpacing:.5}}>Variante {i+1}</span>
+                          <span style={{fontSize:10,fontWeight:700,color:cfg.color,letterSpacing:.5}}>Template {i+1}</span>
                           {cfg.isObj && item[cfg.keyAssunto] && (
-                            <span style={{fontSize:11,color:"#a3b1c9",fontWeight:400}}>· Assunto: {item[cfg.keyAssunto]}</span>
+                            <span style={{fontSize:11,color:"#64748b",fontWeight:400}}>· Assunto: {item[cfg.keyAssunto]}</span>
                           )}
                         </div>
                         <div className="msg" style={{borderLeft:`3px solid ${cfg.color}`,borderRadius:0,margin:0}}>
@@ -1496,7 +1529,7 @@ export default function App() {
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {safeArr(safeData.estrategia?.perguntas_spin).map((q,i)=>{
                   const tipo = q.startsWith("SITUAÇÃO")?"S":q.startsWith("PROBLEMA")?"P":q.startsWith("IMPLICAÇÃO")?"I":"N";
-                  const tcolor = tipo==="S"?"#7dd3fc":tipo==="P"?"#fbbf24":tipo==="I"?"#f87171":"#34d399";
+                  const tcolor = tipo==="S"?"#7dd3fc":tipo==="P"?"#fbbf24":tipo==="I"?"#f87171":"#10b981";
                   return (
                     <div key={i} className="spinq" style={{animation:`fadeSlide .3s ease ${i*0.04}s both`,alignItems:"flex-start"}}>
                       <span style={{background:tcolor+"20",border:`1px solid ${tcolor}40`,color:tcolor,borderRadius:6,padding:"1px 7px",fontSize:9,fontWeight:800,flexShrink:0,marginTop:1}}>{tipo}</span>
@@ -1514,7 +1547,7 @@ export default function App() {
                 {safeArr(safeData.estrategia?.objecoes).map((o,i)=>(
                   <div key={i} className="obj" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
                     <div style={{fontSize:11.5,color:"#fbbf24",fontWeight:700,marginBottom:8,lineHeight:1.4}}>"{o.objecao}"</div>
-                    <div style={{fontSize:12,color:"#e2e8f0",lineHeight:1.65}}>→ {o.resposta}</div>
+                    <div style={{fontSize:12,color:"#334155",lineHeight:1.65}}>→ {o.resposta}</div>
                   </div>
                 ))}
               </div>
@@ -1526,12 +1559,12 @@ export default function App() {
               <div className="g2">
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px rgba(52,211,153,.6)"}}/>
-                    <div style={{fontSize:9,color:"#34d399",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase"}}>AE — Ações Imediatas</div>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:"#10b981",boxShadow:"0 0 8px rgba(16,185,129,.6)"}}/>
+                    <div style={{fontSize:9,color:"#10b981",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase"}}>AE — Ações Imediatas</div>
                   </div>
                   {safeArr(safeData.proximos_passos?.ae).map((a,i)=>(
                     <div key={i} className="row" style={{animation:`fadeSlide .3s ease ${i*0.06}s both`}}>
-                      <span style={{color:"#34d399",fontSize:11,flexShrink:0,marginTop:2}}>→</span>{a}
+                      <span style={{color:"#10b981",fontSize:11,flexShrink:0,marginTop:2}}>→</span>{a}
                     </div>
                   ))}
                 </div>
@@ -1547,11 +1580,11 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div style={{marginTop:18,padding:"14px 18px",background:"linear-gradient(145deg,rgba(52,211,153,.08),rgba(52,211,153,.04))",borderRadius:12,border:"1px solid rgba(52,211,153,.2)",display:"flex",alignItems:"center",gap:10}}>
+              <div style={{marginTop:18,padding:"14px 18px",background:"linear-gradient(145deg,rgba(16,185,129,.08),rgba(16,185,129,.04))",borderRadius:12,border:"1px solid rgba(16,185,129,.2)",display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:18}}>⏱</span>
                 <div>
-                  <div style={{fontSize:10,color:"#34d399",fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Prazo Sugerido</div>
-                  <div style={{fontSize:13,color:"#e2e8f0",fontWeight:600}}>{safeData.proximos_passos?.prazo}</div>
+                  <div style={{fontSize:10,color:"#10b981",fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Prazo Sugerido</div>
+                  <div style={{fontSize:13,color:"#334155",fontWeight:600}}>{safeData.proximos_passos?.prazo}</div>
                 </div>
               </div>
             </div>
@@ -1562,7 +1595,7 @@ export default function App() {
         {/* EMPTY STATE */}
         {!data&&!loading&&(
           <div style={{textAlign:"center",padding:"64px 0",animation:"fadeUp .5s ease"}}>
-            <div style={{width:72,height:72,background:"linear-gradient(145deg,#1a2438,#141c2e)",border:"1px solid #2d3a52",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
+            <div style={{width:72,height:72,background:"linear-gradient(145deg,#1a2438,#141c2e)",border:"1px solid #e8edf4",borderRadius:22,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",boxShadow:"0 8px 32px rgba(0,0,0,.4)"}}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="9" stroke="#2d3a52" strokeWidth="1.8"/>
                 <circle cx="12" cy="12" r="5" stroke="#3a4762" strokeWidth="1.8"/>
@@ -1570,8 +1603,8 @@ export default function App() {
                 <path d="M12 1.5V4M12 20V22.5M1.5 12H4M20 12H22.5" stroke="#3a4762" strokeWidth="1.8" strokeLinecap="round"/>
               </svg>
             </div>
-            <div style={{fontSize:15,color:"#a3b1c9",fontWeight:700,marginBottom:6}}>Pronto para mapear sua próxima conta</div>
-            <div style={{fontSize:12,color:"#4a5878",lineHeight:1.7}}>Digite o nome ou URL de uma empresa na aba Individual<br/>ou envie um CSV para análise em lote</div>
+            <div style={{fontSize:15,color:"#64748b",fontWeight:700,marginBottom:6}}>Pronto para mapear sua próxima conta</div>
+            <div style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>Digite o nome ou URL de uma empresa na aba Individual<br/>ou envie um CSV para análise em lote</div>
           </div>
         )}
 
