@@ -23,14 +23,16 @@ export default async function handler(req, res) {
   // ── CAMADA 1: Hunter.io ──────────────────────────────────────────────────────
   if (hunterKey && domain) {
     try {
-      const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&limit=10&type=personal&api_key=${hunterKey}`;
+      const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&limit=10&type=personal&seniority=senior,executive&api_key=${hunterKey}`;
       const r = await fetch(url);
       if (r.ok) {
         const json = await r.json();
-        const emails = (json.data?.emails || []);
+        // STRICT: only return contacts whose email domain matches the searched domain
+        const emails = (json.data?.emails || []).filter(e =>
+          e.value && e.value.toLowerCase().endsWith("@" + domain.toLowerCase())
+        );
 
-        // Filter for decision-maker roles
-        const seniorRoles = /ceo|cto|ciso|coo|cfo|vp|vice|director|diret|gerente|manager|head|chief|president|founder|co-found/i;
+        const seniorRoles = /ceo|cto|ciso|coo|cfo|vp\b|vice|director|diret|gerente|manager|head|chief|president|founder|co-found|engenhei|engineer|security|segurança/i;
 
         for (const e of emails) {
           if (!e.first_name && !e.last_name) continue;
@@ -50,11 +52,12 @@ export default async function handler(req, res) {
             department: e.department || "",
             is_senior: isSenior,
             source: "Hunter.io",
+            domain_verified: true,
           });
         }
 
         if (results.camada1.length > 0) {
-          results.sources.push(`Hunter.io (${results.camada1.length} contatos encontrados)`);
+          results.sources.push(`Hunter.io (${results.camada1.length} contatos verificados em ${domain})`);
         }
       } else {
         results.errors.push(`Hunter.io: HTTP ${r.status}`);
@@ -69,12 +72,14 @@ export default async function handler(req, res) {
   // ── CAMADA 2: Apollo.io ──────────────────────────────────────────────────────
   if (apolloKey) {
     const roles = targetRoles || [
-      "Fraud Prevention Manager",
-      "Chief Product Officer",
-      "Chief Technology Officer",
-      "Head of Product",
       "CISO",
+      "Chief Information Security Officer",
+      "Head of Security",
       "VP Engineering",
+      "CTO",
+      "AppSec Engineer",
+      "Application Security",
+      "DevSecOps",
     ];
 
     try {
@@ -143,8 +148,8 @@ export default async function handler(req, res) {
   // ── CAMADA 3: Tavily (executa 2 queries focadas em pessoas) ─────────────────
   if (tavilyKey) {
     const queries = [
-      `${company} diretor CEO CTO gerente prevenção fraude LinkedIn`,
-      `${company} executivos liderança diretoria site:linkedin.com`,
+      `"${company}" CISO CTO "Head de Segurança" OR "Head of Security" OR "VP de Engenharia" site:linkedin.com`,
+      `"${company}" diretor CTO CISO segurança engenharia liderança`,
     ];
 
     const tavilyPeople = [];
