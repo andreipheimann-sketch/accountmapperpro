@@ -136,293 +136,241 @@ function buildConsolidated(results) {
   return {total:valid.length,byTier,byScore,setores};
 }
 
-// ─── ACCOUNT DATA BUILDER — Zendesk ──────────────────────────────────────────
+// ─── CONFIG EMPRESA VENDEDORA ─────────────────────────────────────────────────
+// Altere APENAS este bloco para trocar a empresa principal do app
+const EMPRESA = {
+  nome: "Conviso Application Security",
+  nome_curto: "Conviso",
+  descricao: "plataforma de Application Security (AppSec) — SAST, DAST, SCA, gestão de vulnerabilidades e DevSecOps",
+  site: "https://conviso.com.br",
+  vendedor_nome: "Andrei Heimann",
+  vendedor_cargo: "Account Executive Enterprise",
+  vendedor_telefone: "(51) 99436-7667",
+  fit_label: "Fit Conviso",
+  solucoes_label: "Soluções Conviso",
+  footer: "Account Mapper Pro V2 · Andrei Heimann · Conviso Application Security",
+  // Concorrentes diretos — empresa que pesquisar esses nomes deve ter fit BAIXO
+  concorrentes: ["veracode","checkmarx","snyk","sonarqube","sonar","fluid attacks","fluid","pentera","raft","fortify","semgrep","contrast security","invicti","acunetix","burp suite","netsparker","whitesource","mend","black duck","synopsys","dependabot","coverity","cast software"],
+  // Clientes ideais — detectados por setor/produto
+  icp_notas: "Empresas com time de desenvolvimento ativo (10+ devs), produto digital em escala, pressão regulatória ou de clientes enterprise por AppSec",
+};
+
+// ─── ACCOUNT DATA BUILDER — Conviso Application Security ─────────────────────
 function buildAccountData(company, searchResults) {
   const lower = company.toLowerCase();
   const facts = extractFacts(searchResults);
   const realNews = buildRealNews(searchResults);
 
-  // ── ICP DETECTION ──────────────────────────────────────────────────────────
-  // Zendesk ICP: empresas com operação de atendimento ao cliente em escala
-  // Verticais prioritárias: e-commerce, fintech/bancos digitais, SaaS B2B,
-  // telecomunicações, saúde, logística, varejo, marketplace
+  // ── CONCORRENTE CHECK — se for concorrente, fit = BAIXO ──────────────────
+  const isConcorrente = EMPRESA.concorrentes.some(c => lower.includes(c));
 
-  const isEcommerce  = /magalu|magazine|americanas|shopee|amazon|mercado livre|olist|via varejo|casas bahia|extra|centauro|netshoes|dafiti|riachuelo|renner|lojas|marisa|havan|grupo soma/.test(lower);
-  const isFintech    = /nubank|c6|inter|stone|pagseguro|pagbank|picpay|cielo|getnet|mercado pago|sicredi|sicoob|bradesco|itaú|itau|santander|banco|btg|xp|neon|creditas|caixa/.test(lower);
-  const isSaaS       = /totvs|linx|vtex|rdstation|resultados|senior|sankhya|conta azul|contaazul|omie|movidesk|desk|freshdesk|pipedrive|hubspot|salesforce|software|tech|sys|solutions/.test(lower);
-  const isTelecom    = /vivo|claro|tim|oi|telefonica|telecom|algar|embratel|sky|nextel/.test(lower);
-  const isHealthtech = /hapvida|amil|unimed|dasa|fleury|einstein|afya|hospital|clínica|clinica|saúde|saude|health|pebmed|memed|doctoralia/.test(lower);
-  const isLogistics  = /loggi|jadlog|correios|total express|sequoia|braspress|azul cargo|rapidão|jamef|transportes|logística|logistica|frete/.test(lower);
-  const isMarket     = /ifood|rappi|getninjas|99|uber|airbnb|booking|trivago|olx|zap|viva real|quinto andar/.test(lower);
-  const isRetail     = /supermercado|carrefour|pão de açúcar|pao de acucar|extra|assaí|atacadão|atacado|distribuidor/.test(lower);
+  // ── ICP DETECTION ─────────────────────────────────────────────────────────
+  // ICP Conviso: empresas com time de dev ativo e produto digital em escala
+  // Verticais: fintechs, SaaS B2B, e-commerce, healthtech, telecom, govtech
 
-  let setor, solucoes, useCases, dores, regulatorio, triggers, competidores, mercado, tier="Tier 2", score="ALTO";
+  const isFintech    = /nubank|c6\b|banco inter|stone\b|pagseguro|pagbank|picpay|cielo|getnet|sicredi|sicoob|bradesco|itaú|itau|santander|btg|xp\b|neon\b|creditas|caixa econom|mercado pago|safra|original|modal/.test(lower);
+  const isHealthtech = /hapvida|amil|unimed|dasa|fleury|einstein|afya|pebmed|memed|doctoralia|saúde|saude digital|healthtech/.test(lower);
+  const isSaaS       = /totvs|linx|vtex|rdstation|senior\b|sankhya|conta azul|contaazul|omie|pipefy|runrun|resultados digitais|nuvemshop|tray\b|wake\b|vnda/.test(lower);
+  const isEcommerce  = /magalu|magazine luiza|americanas|shopee|amazon\.com\.br|mercado livre|olist|casas bahia|centauro|netshoes|dafiti/.test(lower);
+  const isTelecom    = /\bvivo\b|telefonica|claro brasil|\btim\b|\boi\b|algar|embratel|sky brasil/.test(lower);
+  const isGovtech    = /serpro|dataprev|prodemge|prodest|celepar|prodesp|betha|govtech|governo digital/.test(lower);
+  const isIndustry   = /embraer|weg\b|ambev|petrobras|vale\b|votorantim|braskem|gerdau|suzano|klabin/.test(lower);
+  const isSecurity   = /segurança|security|cybersec|ciberseg|soc\b|mssp|siem/.test(lower);
 
-  if (isEcommerce) {
-    setor = "E-commerce / Varejo Digital"; tier = "Tier 1";
-    solucoes = ["Zendesk Support Suite","Zendesk AI (Agentes Autônomos)","Omnichannel (Chat, E-mail, WhatsApp, Redes)","Help Center + IA Self-service","Zendesk QA (Quality Assurance)","Workforce Management","Analytics & Reports"];
-    useCases = [
-      "Atendimento omnichannel unificado para compras, trocas, devoluções e rastreamento",
-      "IA generativa para deflexão automática de tickets de rastreamento e status de pedido",
-      "Self-service inteligente reduzindo volume em picos de Black Friday e datas sazonais",
-      "Roteamento automático por canal, urgência e tipo de solicitação",
-      "QA automatizado com scoring de qualidade das interações do time de atendimento",
-      "Analytics de CSAT, FCR e tempo de resposta por canal e categoria de produto",
-      "Integração com plataformas de e-commerce (VTEX, Shopify, Magento) via API"
-    ];
-    dores = [
-      "Volume explosivo de tickets em Black Friday e datas sazonais derruba o SLA",
-      "Atendimento fragmentado em canais separados (chat no site, WhatsApp pessoal, e-mail) sem visão unificada",
-      "Mais de 60% dos tickets são perguntas repetitivas sobre rastreamento, troca e devolução — time sobrecarregado",
-      "CSAT baixo gerando impacto direto em recompra e NPS da marca",
-      "Escalabilidade do time de atendimento não acompanha o crescimento de GMV",
-      "Falta de visibilidade sobre performance individual dos agentes e gargalos no pipeline",
-      "Custo por atendimento crescente com equipe maior mas sem automação"
-    ];
-    regulatorio = ["CDC — Código de Defesa do Consumidor","LGPD","SAC (Lei 14.014/2020)","Procon"];
-    triggers = [
-      "Preparação para Black Friday ou alta temporada — janela crítica de volume",
-      "Reclamações públicas no Reclame Aqui afetando reputação da marca",
-      "Crescimento de GMV sem escala proporcional do atendimento",
-      "Lançamento de novo canal de venda (marketplace, app próprio, social commerce)",
-      "Insatisfação com ferramenta atual de atendimento ou expiração de contrato",
-      "Expansão para novas categorias ou regiões aumentando volume de tickets"
-    ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Intercom","Movidesk","Octadesk","HubSpot Service"];
-    mercado = "O e-commerce brasileiro faturou R$ 186 bilhões em 2023, com crescimento de 12% a.a. O volume de atendimento ao cliente cresceu proporcionalmente — a principal causa de abandono de carrinho e não-recompra é a experiência ruim de atendimento pós-venda. Empresas que investem em CX omnichannel retêm 89% dos clientes versus 33% das que não investem.";
+  // Tier logic: Tier 1 = grande empresa com produto digital em escala
+  const isTier1 = isFintech || isSaaS || isEcommerce || isTelecom || isIndustry;
+
+  let setor, solucoes, useCases, dores, exposicao, triggers, competidores, mercado;
+  let tier = isTier1 ? "Tier 1" : "Tier 2";
+  let score = isConcorrente ? "BAIXO" : "ALTO";
+
+  if (isConcorrente) {
+    setor = "Concorrente / Empresa do Setor de AppSec";
+    solucoes = ["N/A — empresa concorrente"];
+    useCases = ["Não aplicável — empresa atua no mesmo espaço de mercado"];
+    dores = ["Esta empresa é um concorrente direto da Conviso — não é um prospect"];
+    exposicao = [];
+    triggers = [];
+    competidores = [];
+    mercado = "Esta empresa atua no mesmo espaço de mercado que a Conviso Application Security. Não é um prospect qualificado — é um concorrente. Avalie se faz sentido uma parceria ou benchmarking, mas não como deal comercial.";
   } else if (isFintech) {
-    setor = "Fintech / Banco Digital"; tier = "Tier 1";
-    solucoes = ["Zendesk Support Suite","Zendesk AI (Agentes Autônomos)","Omnichannel (Chat, WhatsApp, App, Telefone)","Help Center Self-service","Zendesk Voice (Telephony)","API & Integrações","Compliance & Audit Trail"];
+    setor = "Fintech / Banco Digital / Meios de Pagamento"; tier = "Tier 1";
+    solucoes = ["Conviso Platform (AppSec Pipeline Orchestration)","SAST — Análise Estática de Código","DAST — Teste Dinâmico de Aplicações","SCA — Análise de Componentes Open Source","Gestão de Vulnerabilidades com priorização por risco","Pentest Contínuo em APIs e aplicações financeiras","Security Training & Security Champions Program","Compliance PCI-DSS v4.0 e ISO 27001"];
     useCases = [
-      "Atendimento omnichannel unificado: app, chat, WhatsApp, telefone e e-mail em uma plataforma",
-      "IA para resolução automática de dúvidas sobre saldo, transações, PIX e extrato",
-      "Escalamento inteligente de casos sensíveis com contexto completo do cliente",
-      "Auditoria completa de atendimento para compliance com BACEN e SAC regulatório",
-      "Self-service para as 20 perguntas mais frequentes (segunda via, bloqueio, limites)",
-      "Analytics de NPS, CSAT e tempo de resposta por produto e segmento de cliente",
-      "Integração com core banking via API para contexto em tempo real do atendente"
+      "Integração de SAST e DAST no pipeline CI/CD (GitHub, GitLab, Azure DevOps) — shift left real",
+      "Gestão centralizada de vulnerabilidades com SLA por criticidade e risco de negócio",
+      "Compliance contínuo com PCI-DSS v4.0 — requisito obrigatório para aplicações de pagamento",
+      "Pentest contínuo em APIs financeiras, apps mobile e portais web",
+      "Security Champions: capacitar devs como multiplicadores de segurança dentro do time",
+      "SCA para controle de dependências open source com CVEs críticos",
+      "Evidência formal de AppSec para clientes enterprise e auditorias regulatórias"
     ];
     dores = [
-      "Volume massivo de atendimentos com base de clientes crescendo 20-30% ao mês",
-      "Regulação do BACEN (SAC) exige SLA rígido de atendimento e registro de todas as interações",
-      "Clientes exigem resposta imediata 24/7 — tempo de espera alto gera cancelamento de conta",
-      "Atendimento fragmentado entre app, telefone e chat sem visão 360° do cliente",
-      "Custo operacional de atendimento crescendo mais rápido que a receita",
-      "Gestão de qualidade e compliance das interações feita manualmente, sem escala",
-      "Alto volume de reclamações no BACEN e Reclame Aqui por atendimento lento"
+      "Vulnerabilidades críticas descobertas apenas em produção — custo de remediação 6x maior que no desenvolvimento",
+      "Time de segurança sobrecarregado e incapaz de acompanhar o ritmo de deploys diários",
+      "PCI-DSS v4.0 (obrigatório desde março/2024) exige SAST e DAST formais em aplicações de pagamento",
+      "BACEN Resolução 4.658 exige controles documentados de segurança cibernética em aplicações",
+      "Clientes enterprise exigindo relatório de pentest ou evidência de AppSec para fechar contrato",
+      "Open source sem controle: dependências com CVEs críticos em produção sem visibilidade",
+      "Dev team sem cultura de segurança — vulnerabilidades introduzidas na origem do código"
     ];
-    regulatorio = ["BACEN — Resolução SAC","LGPD","Lei do SAC (14.014/2020)","COAF","Banco Central Open Finance"];
+    exposicao = ["PCI-DSS v4.0","BACEN Res. 4.658","LGPD","ISO 27001","SOC 2 Type II","OWASP Top 10","COAF / PLD-FT"];
     triggers = [
-      "Crescimento acelerado da base de clientes exigindo escala de atendimento",
-      "Notificação ou multa do BACEN por descumprimento de SLA de atendimento",
-      "Alto índice de reclamações no Reclame Aqui ou BACEN",
-      "Lançamento de novo produto (conta PJ, crédito, cartão) aumentando volume",
-      "Contrato com fornecedor atual vencendo ou insatisfação com a plataforma",
-      "Expansão para novos segmentos ou parceiros exigindo novo fluxo de atendimento"
+      "Processo de certificação PCI-DSS v4.0 — obrigatório desde março/2024",
+      "Auditoria regulatória do BACEN sobre segurança de aplicações",
+      "Incidente de segurança ou vazamento de dados em produção",
+      "Crescimento acelerado do time de engenharia (mais código = mais risco)",
+      "Cliente enterprise bloqueando contrato por falta de evidência de AppSec",
+      "Lançamento de novo produto digital (app, API pública, portal web)",
+      "Renovação ou insatisfação com ferramenta atual de segurança"
     ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Intercom","Genesys","Twilio Flex","Five9"];
-    mercado = "Os bancos digitais brasileiros somam mais de 150 milhões de contas abertas. O atendimento ao cliente é o principal diferencial competitivo — 78% dos clientes de fintechs relatam que a qualidade do suporte é o fator decisivo para permanência. A regulação do BACEN exige registros completos de todas as interações e SLAs rigorosos de resposta.";
+    competidores = ["Veracode","Checkmarx","Snyk","SonarQube","Fluid Attacks","Pentera"];
+    mercado = "O mercado de AppSec no Brasil cresce 28% ao ano. O PCI-DSS v4.0 tornou SAST e DAST obrigatórios para aplicações de pagamento a partir de março/2024. Um único incidente de segurança custa em média R$ 6,7 milhões ao setor financeiro brasileiro — e o BACEN intensificou fiscalização sobre controles de segurança cibernética em fintechs e bancos digitais.";
+  } else if (isHealthtech) {
+    setor = "Healthtech / Saúde Digital"; tier = "Tier 1";
+    solucoes = ["Conviso Platform","SAST — Análise Estática","DAST — Teste Dinâmico","SCA — Open Source Security","Gestão de Vulnerabilidades","Pentest em Aplicações de Saúde","Compliance LGPD / ANS"];
+    useCases = [
+      "Proteção de dados sensíveis de pacientes (PII/PHI) em aplicações digitais",
+      "SAST e DAST no pipeline CI/CD para detecção precoce de vulnerabilidades",
+      "Compliance com LGPD para software que processa dados de saúde",
+      "Pentest em portais de agendamento, apps mobile e APIs de integração",
+      "Gestão de vulnerabilidades em sistemas legados de prontuário eletrônico",
+      "Evidência de segurança para parceiros hospitalares e planos de saúde"
+    ];
+    dores = [
+      "Dados de pacientes altamente sensíveis — impacto reputacional e legal de um vazamento",
+      "LGPD impõe multas de até R$ 50 milhões por incidentes envolvendo dados de saúde",
+      "Sistemas legados com dívida técnica e vulnerabilidades acumuladas sem visibilidade",
+      "Times de dev pequenos sem expertise formal em segurança de aplicações",
+      "Integrações com planos, hospitais e laboratórios ampliam a superfície de ataque",
+      "Parceiros B2B (hospitais, planos) exigindo evidência de segurança para contratos"
+    ];
+    exposicao = ["LGPD","ANS — Resolução Normativa","ISO 27001","HIPAA (parceiros internacionais)","OWASP Top 10"];
+    triggers = ["Auditoria ANS ou exigência regulatória de segurança","Incidente de vazamento de dados de pacientes","Expansão digital com novos apps ou APIs","Parceiro B2B exigindo evidência formal de AppSec","Lançamento de produto de telemedicina ou app de saúde"];
+    competidores = ["Veracode","Snyk","SonarQube","Checkmarx","Fluid Attacks"];
+    mercado = "O mercado de healthtech brasileiro cresceu 300% nos últimos 4 anos. A LGPD estabeleceu multas de até R$ 50 milhões por incidentes de segurança com dados de saúde. Parceiros como hospitais e planos estão exigindo formalmente evidência de AppSec de seus fornecedores de software.";
   } else if (isSaaS) {
     setor = "Software / SaaS B2B"; tier = "Tier 1";
-    solucoes = ["Zendesk Support Suite","Zendesk AI","Help Center + Base de Conhecimento","Zendesk QA","Customer Success Workflows","API & Integrações","Analytics & Reports"];
+    solucoes = ["Conviso Platform (AppSec Pipeline Orchestration)","SAST — Análise Estática","DAST — Teste Dinâmico","SCA — Open Source Security","Gestão de Vulnerabilidades","Pentest Contínuo","Security Champions Program","Compliance ISO 27001 / SOC 2"];
     useCases = [
-      "Suporte técnico escalável para clientes B2B com SLAs diferenciados por plano",
-      "Base de conhecimento self-service reduzindo volume de tickets em 30-40%",
-      "IA para triagem, categorização e sugestão de resposta para o time de suporte",
-      "QA automatizado para garantir qualidade do atendimento e conformidade de SLA",
-      "Integração com CRM (Salesforce, HubSpot) para visão 360° do cliente",
-      "Workflows de escalamento para CS e account management em casos de risco de churn",
-      "Analytics de saúde do cliente: tickets por conta, tempo de resposta, satisfação"
+      "Shift left: SAST e SCA integrados ao pipeline (GitHub Actions, GitLab CI, Azure DevOps)",
+      "Relatório formal de segurança para clientes enterprise que exigem evidência",
+      "Gestão centralizada de vulnerabilidades com SLA de correção por criticidade",
+      "Pentest em APIs e aplicações web antes de grandes releases",
+      "Security Champions: escalar cultura de segurança para todo o time de dev",
+      "Aceleração de certificações ISO 27001 e SOC 2 com controles documentados"
     ];
     dores = [
-      "Suporte técnico não escala com o crescimento da base de clientes B2B",
-      "SLA inconsistente — clientes enterprise cobram resposta em horas e sistema não prioriza",
-      "Base de conhecimento desatualizada ou inexistente — mesmo problema resolvido várias vezes",
-      "Falta de visibilidade sobre clientes com alto volume de tickets (risco de churn)",
-      "Time de CS e suporte trabalhando em ferramentas separadas, sem contexto compartilhado",
-      "Custo de suporte crescendo proporcionalmente à base — sem automação ou self-service",
-      "Qualidade do atendimento inconsistente entre agentes — sem processo de QA"
+      "Clientes enterprise bloqueando contratos por falta de relatório de pentest ou certificação ISO 27001",
+      "Vulnerabilidades descobertas tarde no ciclo — remediação urgente em produção com custo 6x maior",
+      "Time de segurança não acompanha a velocidade de entrega do produto",
+      "Open source descontrolado: centenas de dependências com CVEs sem visibilidade centralizada",
+      "Devs sem cultura de segurança introduzem falhas sistematicamente na origem do código",
+      "Processo de due diligence de segurança em rodadas de investimento expondo vulnerabilidades"
     ];
-    regulatorio = ["LGPD","SLA contratuais com clientes enterprise","GDPR (clientes internacionais)"];
-    triggers = [
-      "Crescimento acelerado de clientes B2B sem escala de suporte",
-      "Churn de clientes por experiência ruim de suporte",
-      "Cliente enterprise exigindo SLA formal e relatório de atendimento",
-      "Lançamento de novo produto aumentando complexidade do suporte",
-      "Fusão ou aquisição exigindo unificação de plataformas de atendimento",
-      "Contrato com ferramenta atual expirando ou time insatisfeito"
+    exposicao = ["ISO 27001","SOC 2 Type II","LGPD","OWASP Top 10","GDPR (clientes internacionais)"];
+    triggers = ["Cliente enterprise bloqueando contrato por falta de AppSec formal","Processo de certificação ISO 27001 ou SOC 2 iniciado","Incidente de segurança em produção","Rodada de investimento com due diligence de segurança","Expansão internacional com clientes regulados","Crescimento acelerado do time de engenharia"];
+    competidores = ["Veracode","Checkmarx","Snyk","SonarQube","GitLab Security","GitHub Advanced Security","Fluid Attacks"];
+    mercado = "68% dos CISOs brasileiros relatam que AppSec é a principal lacuna de segurança nas empresas de software. Clientes enterprise estão exigindo ISO 27001, SOC 2 e relatórios de pentest como pré-requisito de contrato. O custo de remediação de uma vulnerabilidade em produção é 6x maior que no desenvolvimento.";
+  } else if (isEcommerce) {
+    setor = "E-commerce / Varejo Digital"; tier = "Tier 1";
+    solucoes = ["Conviso Platform","SAST / DAST","Pentest em Plataformas de E-commerce","SCA — Open Source","Gestão de Vulnerabilidades","Compliance PCI-DSS v4.0"];
+    useCases = [
+      "Compliance PCI-DSS v4.0 — obrigatório para aplicações que processam cartões",
+      "SAST no pipeline para detectar falhas antes de deploys em produção",
+      "Pentest em APIs de pagamento, checkout e integrações com marketplaces",
+      "SCA para controle de open source em plataformas de alta escala",
+      "Gestão de vulnerabilidades em múltiplos ambientes e times"
     ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Intercom","HubSpot Service","Movidesk","Zoho Desk"];
-    mercado = "O mercado de SaaS B2B no Brasil cresce 25% ao ano. Empresas que entregam suporte de alta qualidade têm NRR (Net Revenue Retention) 15-20% maior. O custo de churn por suporte ruim é 5x maior que o custo de estruturar um atendimento de excelência com a plataforma certa.";
+    dores = [
+      "PCI-DSS v4.0 exige SAST e DAST formais em aplicações de pagamento desde março/2024",
+      "Plataformas de e-commerce são alvo frequente de ataques de skimming e injeção de código",
+      "Deploys frequentes em alta temporada (Black Friday) aumentam o risco de falhas de segurança",
+      "Dezenas de integrações com sellers, gateways e parceiros ampliam a superfície de ataque",
+      "Falta de visibilidade centralizada de risco de segurança no portfólio de aplicações"
+    ];
+    exposicao = ["PCI-DSS v4.0","LGPD","ISO 27001","OWASP Top 10","CDC"];
+    triggers = ["Auditoria PCI-DSS próxima","Incidente de segurança ou vazamento em produção","Black Friday — janela de alto risco de ataque","Lançamento de novo canal digital ou marketplace","Expansão com novos sellers ou integrações"];
+    competidores = ["Veracode","Snyk","SonarQube","Fluid Attacks","Checkmarx"];
+    mercado = "O e-commerce brasileiro processa mais de R$ 180 bilhões por ano. O PCI-DSS v4.0 tornou SAST e DAST obrigatórios desde março/2024. Ataques de skimming e injeção de código em plataformas de e-commerce causaram perdas de mais de US$ 4 bilhões globalmente em 2023.";
   } else if (isTelecom) {
     setor = "Telecomunicações"; tier = "Tier 1";
-    solucoes = ["Zendesk Support Suite","Zendesk AI (Deflexão em Escala)","Omnichannel (Chat, WhatsApp, App, Telefone)","Help Center Self-service","Zendesk Voice","Workforce Management","Analytics & Reports"];
+    solucoes = ["Conviso Platform","SAST / DAST","Pentest em APIs e Sistemas BSS/OSS","Gestão de Vulnerabilidades","SCA","Compliance ISO 27001 / Anatel"];
     useCases = [
-      "Deflexão massiva de tickets com IA — segunda via, FAQ técnico, status de serviço",
-      "Atendimento omnichannel para suporte técnico, financeiro e comercial",
-      "Self-service para as 50 perguntas mais frequentes (segunda via, reclamação técnica, portabilidade)",
-      "Roteamento inteligente por tipo de solicitação e segmento de cliente",
-      "Workforce Management para dimensionar equipe em picos de demanda",
-      "Analytics de FCR, AHT e CSAT por canal, região e tipo de problema",
-      "Integração com sistemas BSS/OSS para contexto em tempo real do atendente"
+      "SAST integrado no pipeline CI/CD para equipes de engenharia distribuídas",
+      "Segurança de APIs de autoatendimento e apps mobile de clientes",
+      "Pentest em sistemas BSS/OSS, portais de gestão e APIs públicas",
+      "Gestão centralizada de vulnerabilidades no portfólio de sistemas"
     ];
     dores = [
-      "Volume massivo de atendimentos com custo operacional de call center insustentável",
-      "Alto índice de reclamações na Anatel — ranking público afeta reputação e gera multas",
-      "Tempo de resolução elevado para problemas técnicos — CSAT cronicamente baixo no setor",
-      "Atendimento fragmentado entre múltiplos canais sem visão unificada do cliente",
-      "Escalabilidade impossível em picos — blackouts, mudança de plano, campanhas",
-      "Custo por atendimento entre os mais altos do mercado por falta de automação",
-      "Alta rotatividade de agentes por sobrecarga e falta de ferramentas adequadas"
+      "Portfólio massivo de sistemas legados com dívida técnica e vulnerabilidades acumuladas",
+      "Superfície de ataque enorme: apps, portais, APIs, BSS/OSS, IoT, redes",
+      "Anatel e ISO 27001 exigem controles formais de segurança de aplicações",
+      "Times de engenharia distribuídos sem processo centralizado e visível de AppSec"
     ];
-    regulatorio = ["Anatel — Regulamento de Qualidade","SAC (Lei 14.014/2020)","LGPD","Código de Defesa do Consumidor"];
-    triggers = [
-      "Ranking ruim de reclamações na Anatel — risco de multa ou intervenção",
-      "Iniciativa de redução de custo de call center",
-      "Lançamento de nova oferta ou migração de planos aumentando volume",
-      "Projeto de transformação digital do atendimento",
-      "Contrato com plataforma atual vencendo",
-      "Fusão ou aquisição exigindo unificação de plataformas"
-    ];
-    competidores = ["Salesforce Service Cloud","Genesys","Avaya","Twilio Flex","Freshdesk","Five9"];
-    mercado = "As operadoras de telecom brasileiras somam mais de 220 milhões de acessos ativos e processam dezenas de milhões de interações de atendimento por mês. O setor tem o segundo maior índice de reclamações no Procon e Anatel — e a digitalização do atendimento é a principal alavanca para redução de custo e melhoria de satisfação.";
-  } else if (isHealthtech) {
-    setor = "Saúde / Healthtech"; tier = "Tier 2";
-    solucoes = ["Zendesk Support Suite","Zendesk AI","Omnichannel (Chat, WhatsApp, Telefone)","Help Center Self-service","API & Integrações","Analytics & Reports"];
+    exposicao = ["Anatel","ISO 27001","LGPD","OWASP Top 10"];
+    triggers = ["Auditoria regulatória Anatel sobre segurança","Incidente em sistemas de clientes","Lançamento de novo app ou serviço digital","Processo de certificação ISO 27001"];
+    competidores = ["Veracode","Checkmarx","SonarQube","Fluid Attacks"];
+    mercado = "Operadoras de telecom gerenciam os portfólios mais complexos de sistemas digitais do Brasil. A convergência digital criou novas superfícies de ataque e a Anatel intensificou exigências de segurança cibernética para operadoras reguladas.";
+  } else if (isGovtech) {
+    setor = "Governo / GovTech"; tier = "Tier 2";
+    solucoes = ["Conviso Platform","SAST / DAST","Pentest em Sistemas Governamentais","Gestão de Vulnerabilidades","Compliance LGPD / IN SGD","Security Training"];
     useCases = [
-      "Atendimento humanizado e ágil para pacientes e beneficiários em múltiplos canais",
-      "Self-service para agendamento, resultado de exames e dúvidas administrativas",
-      "IA para triagem de solicitações urgentes vs. administrativas",
-      "Integração com sistemas de gestão hospitalar (HIS/ERP) para contexto do paciente",
-      "Analytics de NPS, CSAT e volume por tipo de solicitação e unidade",
-      "Workflow para escalamento de casos clínicos urgentes"
+      "SAST em portais digitais de governo e apps de serviços públicos",
+      "Compliance com LGPD e Instrução Normativa SGD sobre segurança de TI",
+      "Pentest em sistemas críticos antes de lançamentos oficiais",
+      "Gestão de vulnerabilidades no portfólio de sistemas governamentais"
     ];
     dores = [
-      "Volume alto de dúvidas administrativas sobrecarregando equipes de atendimento",
-      "Atendimento lento e fragmentado degradando a experiência do paciente",
-      "LGPD exige proteção rigorosa de dados sensíveis de saúde em todas as interações",
-      "Falta de visibilidade sobre gargalos e principais motivos de contato",
-      "Integração difícil com sistemas legados de gestão hospitalar",
-      "Alta demanda sazonal (flu season, campanhas de vacinação) sem escala"
+      "Sistemas governamentais são alvos de alto impacto e visibilidade pública",
+      "LGPD obriga proteção formal de dados de cidadãos em software governamental",
+      "Portfólio de sistemas legados sem controles de segurança formais documentados",
+      "Times de TI públicos com recursos limitados para AppSec dedicada"
     ];
-    regulatorio = ["LGPD","ANS — Resolução Normativa","CFM","CRM"];
-    triggers = [
-      "Digitalização da jornada do paciente — telemedicina, app de saúde",
-      "Crescimento da base de beneficiários ou abertura de novas unidades",
-      "Reclamações sobre atendimento na ANS ou Procon",
-      "Iniciativa de redução de custo operacional de atendimento",
-      "Lançamento de app ou portal do paciente"
-    ];
-    competidores = ["Salesforce Health Cloud","Freshdesk","Movidesk","Freshworks","Octadesk"];
-    mercado = "O setor de saúde brasileiro atende mais de 50 milhões de beneficiários de planos e bilhões de consultas SUS e privadas por ano. A digitalização da jornada do paciente cresceu 400% pós-pandemia, e a experiência de atendimento tornou-se fator crítico de retenção de beneficiários e reputação de operadoras e hospitais.";
-  } else if (isLogistics) {
-    setor = "Logística / Transportes"; tier = "Tier 2";
-    solucoes = ["Zendesk Support Suite","Zendesk AI","Omnichannel","Help Center Self-service","API & Integrações (TMS/WMS)","Analytics & Reports"];
+    exposicao = ["LGPD","IN SGD/ME nº 01/2020","ISO 27001","OWASP Top 10","TCU"];
+    triggers = ["Auditoria do TCU sobre segurança de sistemas","Incidente público com dados de cidadãos","Projeto de transformação digital governamental","Novo sistema digital em desenvolvimento"];
+    competidores = ["Serpro","Cast Group","SonarQube","Fluid Attacks"];
+    mercado = "O governo federal e estadual opera mais de 4.000 sistemas digitais ativos. Ataques a sistemas públicos cresceram 200% nos últimos 3 anos no Brasil, e a LGPD expõe órgãos públicos a sanções por falhas de segurança em software que processa dados de cidadãos.";
+  } else if (isIndustry) {
+    setor = "Indústria / Manufatura Digital"; tier = "Tier 2";
+    solucoes = ["Conviso Platform","SAST / DAST","Gestão de Vulnerabilidades","SCA","Pentest em Sistemas Industriais e APIs","Compliance ISO 27001"];
     useCases = [
-      "Self-service para rastreamento de encomendas e previsão de entrega",
-      "IA para deflexão automática de tickets de status e extravio",
-      "Atendimento omnichannel para clientes B2C e parceiros B2B",
-      "Integração com TMS/WMS para contexto em tempo real do atendente",
-      "Roteamento por tipo de ocorrência (atraso, extravio, devolução, sinistro)",
-      "Analytics de volume por motivo de contato e performance por região"
+      "Segurança de aplicações industriais conectadas (Industry 4.0, IIoT)",
+      "SAST no pipeline de sistemas de automação e gestão industrial",
+      "Pentest em APIs de integração entre sistemas de produção e ERP",
+      "Compliance ISO 27001 para certificação de fornecedores globais"
     ];
     dores = [
-      "Volume altíssimo de tickets sobre rastreamento — mais de 70% são perguntas repetitivas",
-      "Picos de volume em datas sazonais (Black Friday, Natal) colapsam o atendimento",
-      "Integração difícil com sistemas de rastreamento e TMS legados",
-      "CSAT baixo por atrasos e falta de comunicação proativa sobre entregas",
-      "Custo operacional de atendimento proporcional ao volume de entregas"
+      "Digitalização industrial criou sistemas conectados com alta exposição a ataques",
+      "Clientes globais exigindo ISO 27001 e evidência de AppSec para fornecimento",
+      "OT/IT convergência amplia superfície de ataque em fábricas conectadas",
+      "Time de segurança focado em infraestrutura, sem cobertura de segurança de aplicações"
     ];
-    regulatorio = ["CDC","LGPD","ANTT"];
-    triggers = [
-      "Crescimento do volume de entregas B2C com e-commerce",
-      "Pico sazonal — Black Friday, Natal — gerando colapso no atendimento",
-      "Reclamações públicas sobre comunicação de entregas",
-      "Parceria com novo grande e-commerce aumentando volume",
-      "Projeto de automação de atendimento"
-    ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Movidesk","Octadesk","Zenvia"];
-    mercado = "O mercado de logística brasileiro processa mais de 1 bilhão de entregas por ano. Com o crescimento do e-commerce, o volume de atendimento ao cliente sobre rastreamento e entregas cresceu proporcionalmente — e a experiência pós-compra é hoje o principal diferencial competitivo entre transportadoras.";
-  } else if (isMarket) {
-    setor = "Marketplace / Plataforma Digital"; tier = "Tier 1";
-    solucoes = ["Zendesk Support Suite","Zendesk AI","Omnichannel","Help Center Self-service","API & Integrações","Analytics & Reports","Zendesk QA"];
-    useCases = [
-      "Atendimento para múltiplos perfis: consumidores, prestadores e parceiros em uma plataforma",
-      "IA para triagem e roteamento por perfil de usuário e tipo de solicitação",
-      "Self-service para dúvidas frequentes de cada perfil de usuário",
-      "Gestão de disputas e reclamações entre partes da plataforma",
-      "Analytics segmentado por perfil de usuário, categoria e região",
-      "Integração com sistema de pagamentos e avaliações da plataforma"
-    ];
-    dores = [
-      "Atendimento para múltiplos perfis (consumidor, prestador, parceiro) sem segmentação adequada",
-      "Volume crescendo com a base da plataforma sem automação proporcional",
-      "Gestão de disputas e reclamações complexa e demorada",
-      "CSAT diferente por perfil de usuário sem visibilidade separada",
-      "Integração com múltiplos sistemas da plataforma difícil sem API robusta"
-    ];
-    regulatorio = ["CDC","LGPD","Marco Civil da Internet"];
-    triggers = [
-      "Crescimento acelerado da base de usuários e transações",
-      "Lançamento em nova cidade, região ou vertical",
-      "Reclamações públicas sobre qualidade do atendimento",
-      "Insatisfação com ferramenta atual ou vencimento de contrato",
-      "Expansão internacional"
-    ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Intercom","Zenvia","Octadesk"];
-    mercado = "Marketplaces e plataformas digitais brasileiras somam mais de 300 milhões de transações mensais. O atendimento ao cliente é o principal gargalo de escala dessas plataformas — empresas que automatizam e unificam o suporte crescem 2x mais rápido que as que mantêm atendimento fragmentado.";
-  } else if (isRetail) {
-    setor = "Varejo / Atacado"; tier = "Tier 1";
-    solucoes = ["Zendesk Support Suite","Zendesk AI","Omnichannel","Help Center Self-service","WhatsApp Business","Analytics & Reports"];
-    useCases = [
-      "Atendimento omnichannel para clientes de loja física, e-commerce e WhatsApp",
-      "IA para deflexão de dúvidas sobre produtos, disponibilidade e promoções",
-      "Self-service para trocas, devoluções e SAC regulatório",
-      "Roteamento por loja, região e tipo de solicitação",
-      "Analytics de CSAT e volume por canal e categoria de produto"
-    ];
-    dores = [
-      "Atendimento fragmentado entre loja física, e-commerce e canais digitais",
-      "Volume alto de tickets em datas sazonais sem escala",
-      "SAC regulatório exige resposta em prazo definido pela Lei 14.014/2020",
-      "Falta de visibilidade sobre os principais motivos de contato e insatisfação"
-    ];
-    regulatorio = ["CDC","SAC (Lei 14.014/2020)","LGPD","Procon"];
-    triggers = [
-      "Expansão digital com lançamento de e-commerce ou app",
-      "Black Friday e datas sazonais gerando pico de volume",
-      "Reclamações no Procon ou Reclame Aqui",
-      "Contrato com ferramenta atual vencendo"
-    ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Movidesk","Octadesk","Zenvia"];
-    mercado = "O varejo brasileiro movimenta mais de R$ 1,5 trilhão por ano. A omnicanalidade do atendimento ao cliente é hoje exigência básica do consumidor — 72% dos clientes esperam atendimento consistente em todos os canais, e 67% mudam de marca após uma experiência ruim de atendimento.";
+    exposicao = ["ISO 27001","IEC 62443 (segurança industrial)","LGPD","NIST CSF"];
+    triggers = ["Certificação ISO 27001 exigida por cliente global","Incidente de segurança em sistema industrial","Expansão de produto digital (app, portal, API)","Projeto de digitalização / Industry 4.0"];
+    competidores = ["Veracode","Snyk","SonarQube","Claroty (OT)"];
+    mercado = "A Indústria 4.0 está conectando sistemas de manufatura à internet em escala. Ataques a sistemas industriais cresceram 140% em 2023, e certificações ISO 27001 viraram pré-requisito de fornecimento para grandes industriais globais como Volkswagen, Bosch e Siemens.";
   } else {
-    setor = "Empresa com Operação de Atendimento ao Cliente"; tier = "Tier 2";
-    solucoes = ["Zendesk Support Suite","Zendesk AI","Omnichannel","Help Center Self-service","API & Integrações","Analytics & Reports"];
+    setor = "Empresa com Produto Digital / Time de Desenvolvimento"; tier = "Tier 2";
+    solucoes = ["Conviso Platform (AppSec completa)","SAST — Análise Estática de Código","DAST — Teste Dinâmico","SCA — Open Source Security","Gestão de Vulnerabilidades","Pentest","Security Training"];
     useCases = [
-      "Centralização do atendimento em uma plataforma omnichannel",
-      "IA para deflexão de tickets repetitivos e self-service",
-      "Automação de roteamento e priorização de solicitações",
-      "Analytics de CSAT, FCR e tempo de resposta",
-      "Integração com sistemas internos via API"
+      "Integração de segurança no pipeline de desenvolvimento (DevSecOps)",
+      "Identificação de vulnerabilidades antes de chegarem em produção",
+      "Gestão centralizada de risco de segurança no portfólio de aplicações",
+      "Pentest em APIs e aplicações web/mobile",
+      "Treinamento de times de desenvolvimento em segurança de código"
     ];
     dores = [
-      "Atendimento fragmentado em múltiplos canais sem visão unificada",
-      "Volume crescendo sem automação — custo operacional aumentando",
-      "CSAT abaixo do benchmark do setor",
-      "Falta de métricas claras sobre qualidade e eficiência do atendimento",
-      "Time sobrecarregado com tarefas repetitivas"
+      "Vulnerabilidades descobertas apenas em produção — remediação 6x mais cara",
+      "Time de segurança sobrecarregado ou inexistente",
+      "Clientes ou parceiros exigindo evidências formais de AppSec",
+      "Open source sem controle — dependências com CVEs críticos em produção",
+      "Falta de processo formal e visibilidade de risco de aplicações"
     ];
-    regulatorio = ["LGPD","CDC","SAC (Lei 14.014/2020)"];
-    triggers = [
-      "Crescimento da base de clientes sem escala de atendimento",
-      "Reclamações públicas ou CSAT baixo",
-      "Contrato com ferramenta atual vencendo",
-      "Iniciativa de transformação digital do atendimento",
-      "Novo canal de venda ou produto aumentando volume"
-    ];
-    competidores = ["Salesforce Service Cloud","Freshdesk","Movidesk","Intercom","Octadesk","Zenvia"];
-    mercado = "O mercado de CX e atendimento ao cliente no Brasil cresce 18% ao ano. Empresas que investem em plataformas omnichannel com IA reduzem o custo por atendimento em até 40% e aumentam o CSAT em 20-30 pontos percentuais nos primeiros 6 meses.";
+    exposicao = ["LGPD","ISO 27001","OWASP Top 10"];
+    triggers = ["Incidente de segurança em produção","Cliente enterprise exigindo relatório de pentest","Processo de certificação ISO 27001","Crescimento do time de engenharia","Rodada de investimento com due diligence de segurança"];
+    competidores = ["Veracode","Checkmarx","Snyk","SonarQube","Fluid Attacks","GitHub Advanced Security"];
+    mercado = "O mercado de AppSec no Brasil cresce 25% ao ano. A combinação de LGPD, aumento de ataques e exigências de clientes enterprise criou uma janela de demanda significativa para soluções de segurança integradas ao ciclo de desenvolvimento.";
   }
 
   // ── EMPRESA RESUMO ─────────────────────────────────────────────────────────
@@ -438,7 +386,7 @@ function buildAccountData(company, searchResults) {
   const funcionariosReal = extractValue([/[\d\.]+[\s]*mil[\s]*funcion[aá]rios?/i,/[\d\.]+[\s]*colaboradores?/i]);
   const bolsaReal        = extractValue([/listada?[^\.\,]*?(B3|Nasdaq|NYSE|Bovespa)/i,/ticker[^\.\,]*/i]);
   const fundadoReal      = extractValue([/fundad[ao][^\.\,]*?em[\s]*\d{4}/i,/criad[ao][^\.\,]*?em[\s]*\d{4}/i]);
-  const clientesReal     = extractValue([/[\d,\.]+[\s]*(milh[oõ]es?|mil)[\s]*(de[\s]*)?(clientes?|usu[aá]rios?|contas?|atendimentos?)/i]);
+  const clientesReal     = extractValue([/[\d,\.]+[\s]*(milh[oõ]es?|mil)[\s]*(de[\s]*)?(clientes?|usu[aá]rios?|contas?)/i]);
 
   let empresaResumo;
   if (tavilyAnswers.length > 0) {
@@ -447,144 +395,138 @@ function buildAccountData(company, searchResults) {
     empresaResumo = (main + extra).slice(0, 600) + ((main + extra).length > 600 ? "..." : "");
   } else {
     const knownFacts = {
-      ifood: "iFood é a maior plataforma de delivery de comida da América Latina, com mais de 300.000 restaurantes parceiros e mais de 60 milhões de usuários ativos no Brasil. Processa mais de 80 milhões de pedidos por mês e tem operações no Brasil, Colômbia e México.",
-      magalu: "Magazine Luiza (Magalu) é um dos maiores varejistas digitais do Brasil, listado na B3 (MGLU3). Opera e-commerce, marketplace com mais de 200 mil sellers, lojas físicas e serviços financeiros. Tem mais de 40 milhões de clientes ativos e processa milhões de interações de atendimento por mês.",
-      vivo: "Vivo (Telefónica Brasil) é a maior operadora de telecomunicações do Brasil, com mais de 100 milhões de clientes. Oferece serviços móveis, internet fixa, TV por assinatura e soluções B2B. Listada na B3 (VIVT3), é uma das marcas mais reclamadas no Procon e Anatel.",
-      claro: "Claro Brasil é a segunda maior operadora de telecomunicações do Brasil, pertencente ao grupo América Móvil. Atende mais de 75 milhões de clientes com serviços de internet, TV e telefonia móvel. É recorrentemente citada no ranking de reclamações da Anatel.",
-      nubank: "Nubank é o maior banco digital da América Latina, com mais de 100 milhões de clientes em Brasil, México e Colômbia. Listado na NYSE (NU), oferece cartão de crédito, conta digital, empréstimos e investimentos. Conhecido pela qualidade do atendimento ao cliente como diferencial competitivo.",
-      totvs: "TOTVS é a maior empresa de tecnologia e gestão do Brasil, listada na B3 (TOTS3). Atende mais de 40.000 clientes com ERP, CRM e plataformas de negócios em 12 segmentos. Com mais de 6.000 colaboradores, processa suporte técnico para uma das maiores bases B2B do país.",
-      hapvida: "Hapvida NotreDame Intermédica é um dos maiores grupos de saúde do Brasil, com mais de 10 milhões de beneficiários. Resultado da fusão entre Hapvida e NotreDame, opera planos de saúde, hospitais e clínicas em todo o Brasil, com alto volume de atendimento de beneficiários.",
-      rappi: "Rappi é uma plataforma de delivery e super app colombiana com forte presença no Brasil. Opera delivery de comida, farmácias, supermercados e serviços financeiros. Tem mais de 8 milhões de usuários ativos no Brasil e alta complexidade de atendimento por múltiplos perfis de usuário.",
+      nubank: "Nubank é o maior banco digital da América Latina, com mais de 100 milhões de clientes em Brasil, México e Colômbia. Listado na NYSE (NU), tem um dos maiores times de engenharia da América Latina, com mais de 1.500 engenheiros. Processa bilhões de transações financeiras por mês com foco em segurança e experiência do usuário.",
+      totvs: "TOTVS é a maior empresa de tecnologia e gestão do Brasil, listada na B3 (TOTS3). Atende mais de 40.000 clientes em 12 segmentos com ERP, CRM e plataformas digitais. Tem mais de 6.000 colaboradores e receita anual superior a R$ 3 bilhões. Possui um dos maiores portfólios de software B2B do Brasil.",
+      vtex: "VTEX é uma plataforma de comércio digital brasileira listada na NYSE (VTEX), com presença em 43 países e mais de 2.600 clientes globais. Processa mais de 3 bilhões de dólares em GMV por ano. Tem um time de engenharia distribuído globalmente com mais de 500 devs.",
+      magalu: "Magazine Luiza (Magalu) é um dos maiores varejistas digitais do Brasil, listado na B3 (MGLU3). Opera e-commerce, marketplace com mais de 200 mil sellers, app próprio e serviços financeiros. Tem mais de 40 milhões de clientes ativos e um time de tecnologia com centenas de engenheiros.",
+      ifood: "iFood é a maior plataforma de delivery da América Latina, com mais de 300.000 restaurantes parceiros e mais de 60 milhões de usuários ativos. Processa mais de 80 milhões de pedidos por mês e possui um dos maiores times de engenharia do Brasil, com mais de 1.000 desenvolvedores.",
+      stone: "Stone é uma empresa de meios de pagamento listada na Nasdaq (STNE). Atende mais de 3 milhões de clientes com soluções de pagamento, conta digital e crédito para pequenas e médias empresas. Tem um time de engenharia significativo focado em segurança de transações financeiras.",
+      hapvida: "Hapvida NotreDame Intermédica é um dos maiores grupos de saúde do Brasil, com mais de 10 milhões de beneficiários. Opera planos de saúde, hospitais e clínicas em todo o país. Processa dados sensíveis de saúde de milhões de pacientes, com alta exposição regulatória à LGPD e ANS.",
+      embraer: "Embraer é uma das maiores fabricantes de aeronaves do mundo, listada na B3 e NYSE (ERJ). Opera no segmento de aviação comercial, executiva e defesa. Tem presença em mais de 150 países e processa projetos de engenharia altamente sigilosos, com exigências de segurança de nível global.",
+      petrobras: "Petrobras é a maior empresa do Brasil por receita, listada na B3 e NYSE. Opera exploração, produção e refino de petróleo com sistemas críticos de controle industrial. Tem um portfólio extenso de aplicações digitais com exigências rigorosas de segurança e compliance.",
     };
     const key = Object.keys(knownFacts).find(k => lower.includes(k));
-    empresaResumo = key ? knownFacts[key] : `${company} é uma empresa do setor de ${setor.toLowerCase()} com operação relevante no Brasil. Com base no perfil do segmento, possui volume expressivo de interações com clientes e crescente pressão por qualidade de atendimento — características centrais do ICP da Zendesk.`;
+    if (key) {
+      empresaResumo = knownFacts[key];
+    } else if (isConcorrente) {
+      empresaResumo = `${company} atua no mesmo espaço de mercado que a Conviso Application Security — segurança de aplicações e AppSec. Esta empresa é um concorrente direto e não deve ser tratada como prospect comercial.`;
+    } else {
+      empresaResumo = `${company} é uma empresa do setor de ${setor.toLowerCase()} com time de desenvolvimento ativo e produto digital em escala. Com base no perfil do segmento, enfrenta pressão crescente por controles formais de AppSec — de clientes enterprise, reguladores e investidores. Exatamente o perfil central do ICP da Conviso.`;
+    }
   }
 
-  const fitJustificativa = `${company} atua no segmento de ${setor.toLowerCase()}, um vertical de alta aderência ao ICP da Zendesk no Brasil. Empresas nesse perfil gerenciam alto volume de interações com clientes em múltiplos canais e enfrentam pressão crescente por agilidade, qualidade e custo eficiente de atendimento. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes de informação atualizadas sobre a empresa.` : ""} A Zendesk Suite com IA reduz o custo por atendimento em até 40% e eleva o CSAT em 20-30 pontos percentuais nos primeiros 6 meses de operação.`;
+  const fitJustificativa = isConcorrente
+    ? `${company} é um concorrente direto da Conviso Application Security no espaço de AppSec. Fit: BAIXO para abordagem comercial. Avalie para benchmarking, parcerias ou inteligência competitiva, não como oportunidade de venda.`
+    : `${company} atua no segmento de ${setor.toLowerCase()}, vertical de alta aderência ao ICP da Conviso. Empresas nesse perfil têm times de desenvolvimento ativos, entregam software como produto ou canal, e enfrentam pressão crescente de clientes, reguladores e investidores por AppSec formal. ${facts.hasData ? `Foram identificadas ${facts.newsCount} fontes atualizadas.` : ""} A Conviso Platform reduz o custo de remediação em até 6x e viabiliza compliance contínuo sem travar o roadmap.`;
+
+  // Stakeholders corretos para AppSec (não CX, não fraude)
+  const stakeholders = isConcorrente ? [] : [
+    { cargo: "CISO / Head de Segurança da Informação", nome: "", linkedin: "", angulo: "Decisor estratégico de AppSec. Define a estratégia e o budget de segurança. Sente pressão de clientes, reguladores e board. Quer reduzir risco sem frear o produto. Abordagem: maturidade de AppSec do setor + ROI de custo de remediação evitado.", prioridade: "PRIMARIO", urgencia: "Alta" },
+    { cargo: "CTO / VP de Engenharia", nome: "", linkedin: "", angulo: "Co-decisor técnico e frequentemente economic buyer. Controla o roadmap e quer segurança integrada ao pipeline sem travar entregas. Abordagem: integração nativa CI/CD (GitHub, GitLab, Azure DevOps) + tempo médio de implantação.", prioridade: "PRIMARIO", urgencia: "Alta" },
+    { cargo: "Engineering Manager / Head de Engenharia", nome: "", linkedin: "", angulo: "Usuário direto e influenciador forte. Avalia fricção da integração no dia a dia do time. Impactado pela qualidade e priorização dos resultados de segurança. Abordagem: demo técnica real no stack deles + programa Security Champions.", prioridade: "SECUNDARIO", urgencia: "Média" },
+    { cargo: "CPO / Head de Produto", nome: "", linkedin: "", angulo: "Aliado estratégico. Pressionado por clientes enterprise que exigem AppSec para fechar contrato. Quer segurança como diferencial competitivo. Abordagem: relatório de segurança como acelerador de vendas B2B.", prioridade: "SECUNDARIO", urgencia: "Média" },
+    { cargo: "Head de Compliance / Jurídico", nome: "", linkedin: "", angulo: "Entra em deals com exigência regulatória (PCI-DSS, ISO 27001, LGPD). Valida aderência ao framework regulatório. Abordagem: mapeamento de controles da Conviso vs. requisitos específicos do regulador.", prioridade: "TERCIARIO", urgencia: "Baixa" },
+    { cargo: "CFO / Diretor Financeiro", nome: "", linkedin: "", angulo: "Aprovação de budget. Quer ROI claro: custo de remediação de vuln em produção (6x maior) vs. investimento na Conviso. Abordagem: business case com custo de um incidente de segurança no setor.", prioridade: "TERCIARIO", urgencia: "Baixa" }
+  ];
 
   return {
     empresa: {
       nome: company, setor,
       resumo: empresaResumo,
-      tamanho: funcionariosReal || (tier==="Tier 1" ? "Grande porte (500+ agentes de atendimento)" : "Médio porte (50-500 agentes)"),
+      tamanho: funcionariosReal || (tier==="Tier 1" ? "Grande porte (100+ devs)" : "Médio porte (20-100 devs)"),
       sede: "Brasil",
       operacao: "Nacional / LATAM",
       faturamento: faturamentoReal || (tier==="Tier 1" ? "Grande porte" : "Médio porte"),
       clientes: clientesReal || null,
       estagio: fundadoReal ? `Consolidada — ${fundadoReal}` : (tier==="Tier 1" ? "Consolidada / Scale-up" : "Em crescimento"),
-      bolsa: bolsaReal || "Capital fechado",
+      bolsa: bolsaReal || (isFintech||isSaaS ? "Verificar B3/Nasdaq" : "Capital fechado"),
     },
-    fit: { score, justificativa: fitJustificativa, solucoes_zendesk: solucoes, use_cases: useCases },
+    fit: { score, justificativa: fitJustificativa, solucoes_conviso: solucoes, use_cases: useCases },
     mercado: { contexto: mercado, competidores_provedor: competidores },
     dores: {
       principais: dores,
-      exposicao_regulatoria: regulatorio,
-      sinais_ativos: [
-        "Monitorar score e volume de reclamações no Reclame Aqui (dor ativa e mensurável)",
-        "Verificar vagas abertas de 'Analista de Atendimento', 'CX', 'Customer Success' no LinkedIn",
-        `Checar volume e canais de tráfego via SimilarWeb — crescimento de tráfego = mais clientes = mais atendimento`,
-        `Buscar no Google News: '${company} atendimento', '${company} CSAT', '${company} Procon', '${company} reclamações'`,
-        "Verificar se empresa usa WhatsApp Business API — indica maturidade digital e oportunidade de upgrade"
+      exposicao_regulatoria: exposicao,
+      sinais_ativos: isConcorrente ? [] : [
+        "Verificar vagas abertas de 'AppSec Engineer', 'Security Engineer', 'DevSecOps' no LinkedIn (sinal de dor ativa)",
+        "Checar se a empresa tem certificação ISO 27001 pública — gap = oportunidade direta",
+        `Buscar no Google: '${company} segurança', '${company} vulnerabilidade', '${company} LGPD', '${company} pentest'`,
+        "Verificar CVEs públicos em produtos da empresa no NVD ou GitHub Security Advisories",
+        "Monitorar se há bug bounty program ativo — indica maturidade e investimento em segurança"
       ]
     },
-    triggers,
-    stakeholders: [
-      { cargo: "Head / Diretor de CX ou Atendimento ao Cliente", nome: "", linkedin: "", angulo: "Ponto de entrada principal. Dono do CSAT, FCR e custo por atendimento. Quer reduzir volume sem perder qualidade e mostrar resultado para o board. Abordagem: benchmark de CSAT do setor + demo de IA para deflexão de tickets.", prioridade: "PRIMARIO", urgencia: "Alta" },
-      { cargo: "VP / Diretor de Operações (COO)", nome: "", linkedin: "", angulo: "Economic buyer em muitos deals. Visão de eficiência operacional e custo. Quer reduzir headcount de atendimento ou crescer sem aumentar custo proporcional. Abordagem: business case com ROI de redução de custo por ticket.", prioridade: "PRIMARIO", urgencia: "Alta" },
-      { cargo: "Gerente de Customer Success", nome: "", linkedin: "", angulo: "Aliado estratégico. Foco em retenção, churn e satisfação de clientes B2B. Quer visibilidade sobre saúde da conta e escalamento de casos críticos. Abordagem: workflow de escalamento CS + analytics de saúde do cliente.", prioridade: "SECUNDARIO", urgencia: "Média" },
-      { cargo: "CTO / Head de Tecnologia", nome: "", linkedin: "", angulo: "Decisão técnica de integração. Avalia API, conectores nativos e esforço de implementação. Abordagem: documentação técnica + lista de integrações nativas (Salesforce, HubSpot, VTEX, SAP, etc.).", prioridade: "SECUNDARIO", urgencia: "Média" },
-      { cargo: "CFO / Diretor Financeiro", nome: "", linkedin: "", angulo: "Aprovação de budget. Quer ROI claro e TCO comparativo. Abordagem: business case com custo atual por atendimento vs. projeção pós-Zendesk + prazo de payback.", prioridade: "TERCIARIO", urgencia: "Baixa" },
-      { cargo: "Head de Produto / CPO", nome: "", linkedin: "", angulo: "Entra quando há integração com produto ou app próprio. Avalia experiência do usuário no atendimento in-app. Abordagem: SDK mobile + experiência de atendimento dentro do produto.", prioridade: "TERCIARIO", urgencia: "Baixa" }
-    ],
+    triggers: isConcorrente ? [] : triggers,
+    stakeholders,
     noticias: realNews || [
-      { titulo: `${company} — Mapear notícias recentes de atendimento e CX`, resumo: `Pesquisar: '${company} atendimento', '${company} CSAT', '${company} Reclame Aqui', '${company} expansão' para identificar gatilhos e personalizar a abordagem.`, relevancia: "Trigger identification", url: "" },
-      { titulo: "Contexto de CX no Brasil — 2024/2025", resumo: mercado, relevancia: "Argumento de urgência e contexto de mercado", url: "" }
+      { titulo: `${company} — Mapear notícias recentes`, resumo: isConcorrente ? `${company} é um concorrente da Conviso. Monitore para inteligência competitiva.` : `Pesquisar: '${company} segurança', '${company} ISO 27001', '${company} LGPD', '${company} pentest', '${company} expansão'.`, relevancia: isConcorrente ? "Inteligência competitiva" : "Trigger identification", url: "" },
+      { titulo: "Contexto de AppSec no Brasil 2024/2025", resumo: mercado, relevancia: "Argumento de urgência e contexto regulatório", url: "" }
     ],
-    estrategia: {
-      canal_entrada: "LinkedIn direto com o Head de CX ou Atendimento + cold call de suporte do BDR",
+    estrategia: isConcorrente ? { tier: "N/A", perguntas_spin: [], objecoes: [], emails: [], inmails: [], whatsapps: [], cold_calls: [] } : {
+      canal_entrada: "LinkedIn direto com o CISO ou CTO + cold call de suporte do BDR",
       emails: [
-        {
-          assunto: `Atendimento ao cliente na ${company} — uma pergunta direta`,
-          corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa onde a Zendesk gera mais impacto — operação de atendimento em escala no setor de ${setor.toLowerCase()}, com crescente pressão por qualidade e eficiência.\n\nUma realidade que vejo com frequência em empresas similares:\n\n• Mais de 60% dos tickets são repetitivos e poderiam ser resolvidos por IA ou self-service\n• CSAT abaixo do benchmark por tempo de resposta elevado e atendimento fragmentado\n• Custo por atendimento crescendo proporcionalmente com a base de clientes — sem automação\n\nA Zendesk Suite com IA resolve esses três pontos simultaneamente — e empresas do setor de ${setor.toLowerCase()} estão vendo redução de 40% no custo por atendimento e ganho de 20-30 pontos de CSAT nos primeiros 6 meses.\n\nConsigo te mostrar em 20 minutos como funciona na prática, com benchmark de empresas similares.\n\nTem disponibilidade essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive | Zendesk\n(51) 99436-7667`
-        },
-        {
-          assunto: `${company}: quanto custa um atendimento ruim?`,
-          corpo: `Olá,\n\nVou ser direto: 67% dos clientes mudam de marca após uma experiência ruim de atendimento. E 60% dos tickets de suporte são perguntas que um bom sistema de IA ou self-service resolveria automaticamente.\n\nEmpresas de ${setor.toLowerCase()} que trabalhamos reduziram o custo por atendimento em 40% e aumentaram o CSAT em 25 pontos nos primeiros 6 meses com a Zendesk.\n\nA ${company} tem o perfil certo para esse resultado. Valeria 20 minutos?\n\nAbraço,\nAndrei Heimann | Zendesk`
-        },
-        {
-          assunto: `Case: como [empresa similar] escalou atendimento sem aumentar headcount`,
-          corpo: `Olá,\n\nRecentemente ajudamos uma empresa do setor de ${setor.toLowerCase()} a:\n\n→ Reduzir 45% do volume de tickets com IA e self-service em 60 dias\n→ Aumentar o CSAT de 72% para 89% em 6 meses\n→ Escalar o atendimento 3x sem aumentar o time\n→ Unificar 6 canais diferentes em uma plataforma omnichannel\n\nFaz sentido eu te contar como funcionou? 20 minutos essa semana?\n\nAbraço,\nAndrei Heimann\nAccount Executive | Zendesk\n(51) 99436-7667`
-        }
+        { assunto: `Segurança de aplicações na ${company} — uma pergunta direta`, corpo: `Olá,\n\nChego até você porque a ${company} tem o perfil exato de empresa onde a Conviso Application Security gera mais impacto — time de engenharia ativo no setor de ${setor.toLowerCase()}, com pressão crescente por AppSec formal.\n\nUma realidade que vejo com frequência:\n\n• Vulnerabilidades críticas descobertas apenas em produção — remediação 6x mais cara\n• Time de segurança sobrecarregado, sem conseguir acompanhar o ritmo de deploys\n• Clientes enterprise bloqueando contratos por falta de evidência formal de AppSec\n\nA Conviso Platform integra segurança no pipeline de desenvolvimento — SAST, DAST, SCA e gestão de vulnerabilidades em um lugar, com integração nativa ao GitHub, GitLab e Azure DevOps.\n\nConsigo te mostrar em 20 minutos como funciona, com benchmark de empresas do mesmo segmento.\n\nTem disponibilidade essa semana?\n\nAbraço,\n${EMPRESA.vendedor_nome}\n${EMPRESA.vendedor_cargo} | Conviso Application Security\n${EMPRESA.vendedor_telefone}` },
+        { assunto: `${company}: quanto custa uma vulnerabilidade em produção?`, corpo: `Olá,\n\nVou ser direto: o custo médio de remediação de uma vulnerabilidade descoberta em produção é 6x maior do que se detectada durante o desenvolvimento.\n\nEmpresas de ${setor.toLowerCase()} com quem trabalhamos reduziram esse custo mais de 70% ao integrar SAST e DAST no pipeline — sem frear a velocidade de entrega.\n\nA ${company} tem o perfil certo para esse resultado. Valeria 20 minutos?\n\nAbraço,\n${EMPRESA.vendedor_nome} | Conviso Application Security` },
+        { assunto: `Case: como reduzimos 60% do tempo para ISO 27001 em empresa similar`, corpo: `Olá,\n\nRecentemente ajudamos uma empresa do setor de ${setor.toLowerCase()} a:\n\n→ Reduzir 60% do tempo para certificação ISO 27001\n→ Integrar SAST no pipeline CI/CD em menos de 2 semanas\n→ Zerar vulnerabilidades críticas em produção nos primeiros 90 dias\n→ Criar um programa Security Champions que escalou a cultura de segurança no time\n\nFaz sentido eu te contar como funcionou? 20 minutos essa semana?\n\nAbraço,\n${EMPRESA.vendedor_nome}\n${EMPRESA.vendedor_cargo} | Conviso Application Security\n${EMPRESA.vendedor_telefone}` }
       ],
       inmails: [
-        {
-          assunto: `Atendimento ao cliente na ${company} — vale conversar`,
-          corpo: `Olá, tudo bem?\n\nVi que a ${company} tem uma operação relevante de atendimento ao cliente no setor de ${setor.toLowerCase()} — exatamente o perfil onde a Zendesk entrega mais resultado.\n\nEmpresa similar à de vocês reduziu 45% do volume de tickets com IA e aumentou o CSAT em 25 pontos nos primeiros 6 meses após migrar para a Zendesk Suite.\n\nFaz sentido um papo de 20 minutos para eu entender como está a operação de atendimento de vocês hoje?\n\nAbraço,\nAndrei Heimann | Account Executive · Zendesk`
-        },
-        {
-          assunto: `Uma pergunta sobre a experiência de atendimento`,
-          corpo: `Olá!\n\nQueria te fazer uma pergunta direta: qual é hoje o maior desafio da operação de atendimento de vocês — é volume, CSAT, custo operacional ou a fragmentação entre canais?\n\nPergunto porque dependendo da resposta, posso te mostrar como empresas similares resolveram exatamente esse ponto com a Zendesk.\n\nVale um papo rápido?`
-        },
-        {
-          assunto: `Vi que a ${company} está crescendo — parabéns`,
-          corpo: `Olá,\n\nAcompanho o crescimento da ${company} — impressionante o que vocês estão construindo no setor de ${setor.toLowerCase()}.\n\nEmpresa que cresce rápido normalmente enfrenta um desafio específico: o volume de atendimento ao cliente cresce junto — e sem a estrutura certa, o CSAT cai e o custo sobe na mesma proporção.\n\nValeria uma conversa de 15 minutos para eu mostrar como outras empresas do mesmo segmento anteciparam esse problema com a Zendesk?\n\nAbraço,\nAndrei Heimann | Zendesk`
-        }
+        { assunto: `Segurança de aplicações na ${company} — vale conversar`, corpo: `Olá, tudo bem?\n\nVi que a ${company} tem um time de engenharia ativo no setor de ${setor.toLowerCase()} — exatamente o perfil onde a Conviso entrega mais resultado.\n\nEmpresa similar reduziu vulnerabilidades críticas em produção em 70% e acelerou a ISO 27001 em 60% após integrar a Conviso Platform no pipeline.\n\nFaz sentido um papo de 20 minutos para entender como está o processo de AppSec de vocês hoje?\n\nAbraço,\n${EMPRESA.vendedor_nome} | AE Enterprise · Conviso Application Security` },
+        { assunto: `Uma pergunta sobre segurança no ciclo de desenvolvimento`, corpo: `Olá!\n\nPergunta direta: como vocês identificam vulnerabilidades no código hoje — automatizado no pipeline, manual, ou através de pentests pontuais?\n\nDependendo da resposta, posso te mostrar como empresas similares resolveram isso de forma estruturada com a Conviso Platform.\n\nVale um papo rápido?` },
+        { assunto: `Vi que a ${company} está crescendo — parabéns`, corpo: `Olá,\n\nAcompanho o crescimento da ${company} no setor de ${setor.toLowerCase()}.\n\nEmpresa que cresce rápido em produto digital normalmente enfrenta um desafio específico: a velocidade de desenvolvimento cresce mais rápido que a maturidade de segurança — e o risco cresce junto.\n\nValeria 15 minutos para mostrar como outras empresas do mesmo segmento anteciparam esse problema com AppSec integrada ao pipeline?\n\nAbraço,\n${EMPRESA.vendedor_nome} | Conviso Application Security` }
       ],
       whatsapps: [
-        `Oi [Nome], tudo bem? Sou o Andrei da Zendesk. Vi que a ${company} tem uma operação relevante de atendimento no setor de ${setor.toLowerCase()}. Trabalhamos com CX e atendimento ao cliente em escala. Valeria um papo de 15 minutos essa semana?`,
-        `Oi [Nome]! Andrei, da Zendesk. Direto ao ponto: empresa do mesmo setor da ${company} reduziu 45% do volume de tickets e aumentou 25 pontos de CSAT com nossa plataforma. Tenho um case rápido que vale você ver. Posso te mandar?`,
-        `Oi [Nome], Andrei da Zendesk. Você cuida de atendimento ao cliente ou CX na ${company}? Se sim, tenho algo relevante para te mostrar — 15 minutos essa semana. Se não for você, quem seria o contato certo?`
+        `Oi [Nome], tudo bem? Sou o ${EMPRESA.vendedor_nome} da Conviso Application Security. Vi que a ${company} tem um time de engenharia ativo no setor de ${setor.toLowerCase()}. Trabalhamos com AppSec integrada ao pipeline de desenvolvimento. Valeria um papo de 15 minutos essa semana?`,
+        `Oi [Nome]! ${EMPRESA.vendedor_nome}, da Conviso AppSec. Direto ao ponto: empresa do mesmo setor da ${company} reduziu 70% das vulnerabilidades críticas e acelerou ISO 27001 em 60% com nossa plataforma. Tenho um case rápido que vale você ver. Posso te mandar?`,
+        `Oi [Nome], ${EMPRESA.vendedor_nome} da Conviso Application Security. Você cuida de segurança de aplicações ou engenharia na ${company}? Se sim, tenho algo relevante — 15 minutos essa semana. Se não for você, quem seria o contato certo?`
       ],
       cold_calls: [
-        `"Bom dia [Nome], aqui é o Andrei da Zendesk. Tenho 30 segundos? [pausa] Perfeito. Trabalho com plataformas de atendimento ao cliente em escala — e a ${company} tem exatamente o perfil de empresa onde a gente gera mais resultado no setor de ${setor.toLowerCase()}. Empresas similares reduziram 40% do custo por atendimento e ganharam 25 pontos de CSAT nos primeiros 6 meses. Faz sentido eu te mostrar como funcionou? Quando você tem 20 minutos essa semana?"`,
-        `"[Nome], bom dia! Andrei da Zendesk. Vou ser direto — ligo porque a ${company} apareceu no nosso radar no setor de ${setor.toLowerCase()}. Uma pergunta rápida: hoje vocês atendem clientes em quantos canais diferentes — e eles estão todos conectados em uma plataforma única? [ouvir] Entendi. E quando chega um pico de volume, como vocês gerenciam a fila sem impactar o CSAT?"`,
-        `"Oi [Nome], Andrei da Zendesk. Sei que você recebe muita ligação — vou ser rápido. Tenho um case de empresa do setor de ${setor.toLowerCase()} com perfil muito similar ao da ${company} — reduziram 45% do volume de tickets e escalaram 3x sem aumentar o time. Vale 2 minutos agora ou prefere que eu ligue amanhã?"`
+        `"Bom dia [Nome], aqui é o ${EMPRESA.vendedor_nome} da Conviso Application Security. Tenho 30 segundos? [pausa] Perfeito. Trabalho com segurança de aplicações integrada ao ciclo de desenvolvimento — e a ${company} tem exatamente o perfil onde a gente gera mais resultado no setor de ${setor.toLowerCase()}. Empresas similares reduziram vulnerabilidades críticas em produção em 70% sem frear o time de produto. Faz sentido eu te mostrar como funcionou? Quando você tem 20 minutos?"`,
+        `"[Nome], bom dia! ${EMPRESA.vendedor_nome} da Conviso AppSec. Ligo porque a ${company} apareceu no nosso radar. Uma pergunta: hoje vocês têm algum processo automatizado de segurança no pipeline — SAST, DAST, análise de dependências? [ouvir] Entendi. E quando descobrem uma vulnerabilidade crítica, qual é o processo de priorização e correção hoje?"`,
+        `"Oi [Nome], ${EMPRESA.vendedor_nome} da Conviso AppSec. Vou ser rápido. Tenho um case de empresa do setor de ${setor.toLowerCase()} com perfil muito similar ao da ${company} — reduziram 70% das vulns em produção e aceleraram a ISO 27001 em 60%. Vale 2 minutos agora ou prefere que eu ligue amanhã?"`
       ],
       perguntas_spin: [
-        "SITUAÇÃO: Como está estruturada hoje a operação de atendimento ao cliente de vocês — quais canais utilizam e como estão integrados?",
-        "SITUAÇÃO: Qual o volume mensal de tickets ou atendimentos e quantas pessoas estão no time de suporte hoje?",
-        "SITUAÇÃO: Vocês usam alguma plataforma de atendimento hoje? Qual? Há quanto tempo?",
-        "SITUAÇÃO: Qual o canal com maior volume — e-mail, chat, WhatsApp, telefone? O cliente consegue transitar entre canais sem repetir o problema?",
-        "PROBLEMA: Qual o tempo médio de primeira resposta por canal hoje? Está dentro do SLA que vocês consideram aceitável?",
-        "PROBLEMA: Qual a porcentagem estimada de tickets que são perguntas repetitivas — rastreamento, segunda via, status, FAQ — que poderiam ser resolvidas automaticamente?",
-        "PROBLEMA: Quando há um pico de volume (sazonalidade, incidente, campanha), como vocês gerenciam sem impactar o CSAT e o SLA?",
-        "PROBLEMA: O time de atendimento tem visibilidade sobre o histórico completo do cliente antes de responder, ou precisa perguntar informações que ele já deu antes?",
-        "IMPLICAÇÃO: Qual o impacto no negócio quando o CSAT cai — vocês conseguem medir a correlação entre satisfação de atendimento e recompra ou retenção?",
-        "IMPLICAÇÃO: Qual o custo estimado de atendimento por ticket hoje — considerando ferramentas, headcount e supervisão?",
-        "IMPLICAÇÃO: Se o volume de atendimento crescer 50% nos próximos 12 meses, como vocês escalam sem aumentar proporcionalmente o headcount?",
-        "NECESSIDADE: Se vocês pudessem deflexionar 40% dos tickets com IA e self-service e aumentar o CSAT em 20-25 pontos, qual seria o impacto para o negócio?",
-        "NECESSIDADE: O que precisaria acontecer para um projeto de CX subir de prioridade na agenda de vocês — ou já está prioritário?",
-        "NECESSIDADE: Se eu conseguisse te mostrar um ROI claro em 6 meses — com redução de custo e aumento de CSAT mensuráveis — isso seria suficiente para avançarmos para uma demo completa?"
+        "SITUAÇÃO: Como está estruturado hoje o processo de segurança de aplicações de vocês — é manual, automatizado no pipeline, ou ainda não tem processo formal?",
+        "SITUAÇÃO: Qual o tamanho do time de engenharia e quantos deploys por semana fazem hoje?",
+        "SITUAÇÃO: Vocês usam alguma ferramenta de SAST, SCA ou análise de dependências integrada ao pipeline hoje?",
+        "SITUAÇÃO: Existe um time ou profissional dedicado de segurança de aplicações, ou é responsabilidade compartilhada com o time de infra?",
+        "PROBLEMA: Com que frequência vulnerabilidades críticas chegam até produção sem serem detectadas antes?",
+        "PROBLEMA: Quando uma vulnerabilidade é encontrada, qual é o processo de priorização e correção? Tem SLA definido?",
+        "PROBLEMA: Algum cliente enterprise já exigiu relatório de pentest, SAST ou evidência de AppSec para fechar ou renovar contrato?",
+        "PROBLEMA: O time de desenvolvimento tem cultura de segurança, ou segurança ainda é vista como atrito e responsabilidade exclusiva do time de infra/segurança?",
+        "IMPLICAÇÃO: Qual o custo estimado de remediação de uma vulnerabilidade crítica descoberta em produção vs. no desenvolvimento?",
+        "IMPLICAÇÃO: Vocês estão em processo de certificação (ISO 27001, SOC 2, PCI-DSS)? Qual o impacto de não ter AppSec formalizada nesse processo?",
+        "IMPLICAÇÃO: Se ocorrer um incidente de segurança em produção, qual seria o impacto financeiro, reputacional e contratual para a empresa?",
+        "NECESSIDADE: Se vocês tivessem SAST, DAST e gestão de vulnerabilidades integrados no pipeline hoje, qual seria o impacto na velocidade de entrega e na confiança dos clientes?",
+        "NECESSIDADE: O que precisaria acontecer para AppSec subir de prioridade na agenda — ou já está prioritária?",
+        "NECESSIDADE: Se eu conseguisse te mostrar como integrar segurança no pipeline em menos de 2 semanas sem impactar o roadmap, isso seria suficiente para avançarmos para uma POC?"
       ],
       objecoes: [
-        { objecao: "Já usamos uma ferramenta de atendimento (Freshdesk, Salesforce, Movidesk...)", resposta: "Faz sentido — e boa parte dos nossos clientes vêm de outras ferramentas. Quando vence o contrato atual? O que mais me interessa é entender se a ferramenta está resolvendo os três principais desafios: omnicanalidade real, IA para deflexão e analytics acionável. Posso fazer uma demo comparativa em 30 minutos para vocês terem um benchmark antes da próxima renovação." },
-        { objecao: "Não temos budget aprovado para isso agora", resposta: "Entendo. Antes de fecharmos: qual o custo estimado do atendimento hoje por ticket, considerando headcount e ferramentas? E quanto custa para vocês perder um cliente por experiência ruim? Na maioria dos cases, o payback da Zendesk aparece antes de 6 meses — o que torna a conversa com o CFO mais simples de conduzir." },
-        { objecao: "Nossa equipe não tem capacidade de implementação agora", resposta: "A implementação da Zendesk é conduzida pelo nosso time de CS e leva em média 4-6 semanas. O time de vocês não precisa parar o dia a dia — rodamos em paralelo com a ferramenta atual e migramos gradualmente. Posso te mostrar o cronograma de onboarding de um cliente do mesmo segmento?" },
-        { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Faz sentido. Me conta: o CSAT está estável ou vocês estão vendo pressão crescente? E o volume de atendimento está crescendo com a base de clientes? Se sim, normalmente esse tema sobe de prioridade antes do esperado — e é melhor ter avaliado a solução antes de virar urgência." },
-        { objecao: "Já tentamos outra plataforma e o time não adotou", resposta: "Essa é a realidade mais comum em migrações. O que não funcionou — foi a UX para o agente, a integração com sistemas internos, ou a falta de suporte no onboarding? Pergunto porque a Zendesk tem uma taxa de adoção de 94% nos primeiros 90 dias, exatamente por focar na experiência do agente. Posso te mostrar?" },
-        { objecao: "Nosso atendimento é muito específico / personalizado para uma ferramenta genérica", resposta: "Entendo a preocupação — mas a Zendesk é altamente customizável via API e tem mais de 1.500 integrações nativas. Qual é o fluxo mais complexo de vocês? Provavelmente já mapeamos algo parecido com outro cliente do setor." },
-        { objecao: "Precisamos envolver TI antes de qualquer decisão", resposta: "Perfeito — é o caminho certo. Posso preparar uma sessão técnica com o time de TI de vocês mostrando a arquitetura de integração, as APIs disponíveis e os conectores nativos com os sistemas que vocês já usam. Quem seria o ponto de contato técnico ideal?" },
-        { objecao: "A Zendesk é cara demais para o nosso porte", resposta: "Me ajuda a entender o porte atual — quantos agentes e qual o volume de tickets por mês? A Zendesk tem planos por agente com ROI comprovado a partir de times de 5 pessoas. E normalmente a comparação com o custo atual de ferramentas fragmentadas + headcount adicional muda a percepção de preço." }
+        { objecao: "Já usamos SonarQube / ferramenta interna", resposta: "SonarQube é ótimo para qualidade de código. A diferença com a Conviso Platform é a camada de gestão de vulnerabilidades com contexto de risco de negócio, DAST para aplicações em execução, SCA para open source e o programa Security Champions para escalar no time. Posso te mostrar como as duas se complementam em 20 minutos?" },
+        { objecao: "Não temos budget para isso agora", resposta: "Entendo. Antes de fecharmos: qual o custo estimado de remediação de uma vuln crítica em produção — horas de engenharia, rollback, comunicação com clientes e risco regulatório? Na maioria dos cases, o investimento na Conviso paga em um único incidente evitado." },
+        { objecao: "Nossa TI não tem capacidade de implementação agora", resposta: "A integração com GitHub, GitLab ou Azure DevOps leva em média 2 semanas e é conduzida pelo nosso time de CS. O time de vocês não precisa parar o roadmap — rodamos em paralelo." },
+        { objecao: "Não é prioridade agora, temos outros projetos", resposta: "Faz sentido. Vocês têm algum cliente enterprise ou processo de certificação onde AppSec será exigida nos próximos 6 meses? Normalmente esse tema sobe de prioridade antes do esperado — melhor ter o processo rodando antes da urgência chegar." },
+        { objecao: "Já fazemos pentest periodicamente", resposta: "Pentest pontual é um ótimo começo. A diferença: com deploys frequentes, vulnerabilidades novas surgem entre um pentest e outro. A Conviso complementa com análise contínua no pipeline — você encontra no desenvolvimento o que o pentest encontraria em produção." },
+        { objecao: "Precisamos envolver o time de engenharia antes", resposta: "Perfeito — é o caminho certo. Posso preparar uma demo técnica com o Engineering Manager ou Tech Lead, mostrando a integração no pipeline real de vocês. Quem seria o ponto de contato técnico ideal?" },
+        { objecao: "Já tentamos uma ferramenta de AppSec e o time não adotou", resposta: "O que não funcionou — fricção na integração, muitos falsos positivos, ou o time não sabia priorizar os resultados? A Conviso tem um modelo de Security Champions específico para resolver esse problema de adoção." },
+        { objecao: "Preferimos fazer internamente com a equipe de segurança", resposta: "Faz sentido ter esse controle. A Conviso não substitui o time interno — ela dá a plataforma e os dados para o time trabalhar com mais eficiência. Qual é a cobertura atual do time em aplicações monitoradas vs. total do portfólio?" }
       ],
       tier
     },
-    proximos_passos: {
+    proximos_passos: isConcorrente ? { ae: [`${company} é um concorrente da Conviso — não prosseguir com abordagem comercial`], bdr: [], prazo: "N/A" } : {
       ae: [
-        `Mapear organograma no LinkedIn Sales Navigator — foco em Head de CX, COO e CTO da ${company}`,
-        "Checar score e volume de reclamações no Reclame Aqui (termômetro de dor ativa e mensuração de urgência)",
-        `Verificar canais de atendimento ativos da ${company} — site, app, WhatsApp, Instagram — e testar a experiência`,
-        `Buscar no Google News: '${company} atendimento', '${company} CSAT', '${company} expansão'`,
-        "Preparar business case com estimativa de ROI baseado no volume de atendimento e custo atual",
-        `Enviar InMail personalizado ao Head de CX referenciando o score no Reclame Aqui ou crescimento recente`
+        `Mapear organograma no LinkedIn Sales Navigator — buscar por CISO, CTO e Head de Segurança NA EMPRESA ${company.toUpperCase()} especificamente`,
+        "Pesquisar vagas abertas de 'AppSec Engineer', 'Security Engineer', 'DevSecOps' (sinal de dor ativa)",
+        `Verificar certificação ISO 27001 pública da ${company} — ausência = oportunidade direta`,
+        `Buscar CVEs públicos associados a produtos da ${company} no NVD ou GitHub Security Advisories`,
+        "Preparar business case com custo de remediação de vulnerabilidade em produção vs. investimento na Conviso",
+        `Enviar InMail personalizado ao CISO ou CTO com referência ao contexto regulatório do setor de ${setor.toLowerCase()}`
       ],
       bdr: [
-        "Iniciar sequência de cold call — foco em Head de CX e COO",
-        "Enviar WhatsApp com vídeo personalizado (Loom) testando o atendimento da empresa antes de ligar",
-        "Disparar sequência de 4 e-mails no Outreach/HubSpot (Custo → Case → CSAT Benchmark → FUP Final)",
-        "Monitorar sinais de intenção via 6Sense — alertar AE sobre contas quentes",
-        "Mapear eventos do setor: ExpoEcommerce, CONAREC, CIAB, NRF Brasil, eventos de CX e Customer Experience"
+        "Cold call focado em CISO e CTO — não confundir com outros perfis de segurança",
+        "Enviar WhatsApp com Loom personalizado referenciando o case mais relevante do segmento",
+        "Disparar sequência de 4 e-mails (Custo de Vuln → Case → ISO 27001 → FUP Final)",
+        "Monitorar sinais via 6Sense — alertar AE sobre contas com intenção ativa de compra de AppSec",
+        "Mapear eventos: Mind The Sec, Security Leaders, CIAB Febraban, eventos de tecnologia do segmento"
       ],
-      prazo: "Primeira abordagem em até 48 horas — prioridade máxima se Reclame Aqui com score baixo ou vagas abertas de CX"
+      prazo: "Primeira abordagem em até 48 horas — prioridade Tier 1 se há sinal de certificação, incidente ou cliente enterprise exigindo AppSec"
     }
   };
 }
@@ -793,7 +735,7 @@ export default function App() {
 
     // Digital transformation signals
     if (/digital|tecnologia|plataforma|app|aplicativo|onboarding/.test(text)) {
-      destaques.push("Iniciativas de transformação digital mencionadas — abre caminho para posicionamento da Zendesk como parceira estratégica de CX");
+      destaques.push("Iniciativas de transformação digital mencionadas — abre caminho para posicionamento da Conviso Application Security como parceira estratégica de AppSec");
       oportunidades.push("Agenda digital ativa indica abertura para novas soluções de identidade e autenticação");
     }
 
@@ -813,7 +755,7 @@ export default function App() {
     // Investment / M&A signals
     if (/investimento|rodada|aquisição|fusão|parceria estratégica|captação/.test(text)) {
       triggersDocs.push("Movimentos de M&A ou captação identificados — momento de maior rigor em due diligence e KYB");
-      oportunidades.push("Transações corporativas exigem validação robusta de identidade de sócios e parceiros — use cases de atendimento ao cliente da Zendesk se aplicam diretamente");
+      oportunidades.push("Transações corporativas exigem validação robusta de identidade de sócios e parceiros — use cases de AppSec da Conviso se aplicam diretamente");
     }
 
     // People / org signals
@@ -824,7 +766,7 @@ export default function App() {
     // Product launch signals
     if (/lançamento|novo produto|produto digital|serviço digital/.test(text)) {
       triggersDocs.push("Lançamento de novo produto ou serviço digital identificado — janela ideal para integrar identidade digital desde o início");
-      oportunidades.push("Novos produtos digitais geram novo volume de atendimento — posicionar Zendesk antes do lançamento é o momento mais estratégico");
+      oportunidades.push("Novos produtos digitais precisam de AppSec desde o desenvolvimento — posicionar Conviso antes do lançamento é o momento mais estratégico");
     }
 
     // Risk / concern section
@@ -840,7 +782,7 @@ export default function App() {
       oportunidades.push("Utilize o documento como base para personalizar a abordagem com dados internos da empresa — aumenta significativamente a taxa de resposta");
     }
     if (!triggersDocs.length) {
-      triggersDocs.push("Revise o documento em busca de menções a crescimento, novos produtos, compliance ou expansão — esses são os principais gatilhos para a abordagem Zendesk");
+      triggersDocs.push("Revise o documento em busca de menções a crescimento, novos produtos, compliance ou expansão — esses são os principais gatilhos para a abordagem Conviso");
     }
 
     return {
@@ -991,7 +933,7 @@ export default function App() {
     w.document.write(`<!DOCTYPE html><html><head><title>Account Map - ${data?.empresa?.nome}</title>
     <style>body{font-family:Verdana,sans-serif;padding:32px;color:#0f172a;font-size:12px;line-height:1.7}h1{font-size:22px;margin-bottom:4px;font-weight:800}h2{font-size:10px;font-weight:700;margin:18px 0 8px;border-bottom:2px solid #e2e8f0;padding-bottom:4px;text-transform:uppercase;letter-spacing:1.5px;color:#475569}.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px}ul{list-style:none;padding:0}li{padding:4px 0 4px 14px;position:relative;color:#334155}li:before{content:"→";position:absolute;left:0;color:#22c55e}.msg{background:#f8fafc;border-left:3px solid #22c55e;padding:12px;white-space:pre-wrap;margin:8px 0;font-size:11.5px;border-radius:0 6px 6px 0}.sk{border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px}.tag{display:inline-block;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px;margin:2px;font-size:10px}.footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px;font-size:10px;color:#94a3b8}</style>
     </head><body>${reportRef.current.innerHTML}
-    <div class="footer">Account Mapper Pro V2 · Andrei Heimann · Zendesk · ${new Date().toLocaleDateString("pt-BR")}</div>
+    <div class="footer">Account Mapper Pro V2 · Andrei Heimann · Conviso Application Security · ${new Date().toLocaleDateString("pt-BR")}</div>
     </body></html>`);
     w.document.close(); setTimeout(()=>w.print(),500);
   }
@@ -1279,9 +1221,9 @@ export default function App() {
               <p style={{marginBottom:16,lineHeight:1.7}}>{safeData.empresa?.resumo}</p>
               <div className="g2">
                 <div className="card"><h2>Dados da Empresa</h2><ul>{[["Faturamento",safeData.empresa?.faturamento],["Tamanho",safeData.empresa?.tamanho],["Estágio",safeData.empresa?.estagio],["Bolsa",safeData.empresa?.bolsa]].map(([k,v])=>v&&<li key={k}><b>{k}:</b> {v}</li>)}</ul></div>
-                <div className="card"><h2>Fit Zendesk — {safeData.fit?.score}</h2><p>{safeData.fit?.justificativa}</p></div>
+                <div className="card"><h2>Fit Conviso — {safeData.fit?.score}</h2><p>{safeData.fit?.justificativa}</p></div>
               </div>
-              <h2>Soluções Zendesk Aplicáveis</h2><div>{safeArr(safeData.fit?.solucoes_zendesk).map((s,i)=><span key={i} className="tag">{s}</span>)}</div>
+              <h2>Soluções Conviso Aplicáveis</h2><div>{safeArr(safeData.fit?.solucoes_conviso).map((s,i)=><span key={i} className="tag">{s}</span>)}</div>
               <h2>Use Cases</h2><ul>{safeArr(safeData.fit?.use_cases).map((u,i)=><li key={i}>{u}</li>)}</ul>
               <h2>Dores Mapeadas</h2><ul>{safeArr(safeData.dores?.principais).map((d,i)=><li key={i}>{d}</li>)}</ul>
               <h2>Exposição Regulatória</h2><ul>{safeArr(safeData.dores?.exposicao_regulatoria).map((r,i)=><li key={i}>{r}</li>)}</ul>
@@ -1339,11 +1281,11 @@ export default function App() {
             {/* FIT + USE CASES */}
             <div className="g2" style={{marginBottom:0}}>
               <div className="card" style={{borderColor:ss?.border+"55"}}>
-                <div className="ct">Fit Zendesk</div>
+                <div className="ct">Fit Conviso</div>
                 <div style={{fontSize:12.5,lineHeight:1.75,marginBottom:16,color:"#334155"}}>{safeData.fit?.justificativa}</div>
                 <div style={{marginBottom:8}}>
-                  <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Zendesk</div>
-                  {safeArr(safeData.fit?.solucoes_zendesk).map((s,i)=>(
+                  <div style={{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Soluções Conviso</div>
+                  {safeArr(safeData.fit?.solucoes_conviso).map((s,i)=>(
                     <span key={i} className="pill" style={{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.28)",color:"#10b981"}}>{s}</span>
                   ))}
                 </div>
